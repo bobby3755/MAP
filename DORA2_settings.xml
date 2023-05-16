@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+
+<!--ADAPTED from Hazan's code for STORM Anslysis-->
+<!--Author: Jerry-->
+<!--Date Last Edited: 5/10/2023-->
+
+<!--Caution: only certain data types are accepted by parameters.py. In particular, do not use 'long-->
+<!--Accepted: int,int-array,float,float-array,ing-array. Otherwise, assumed to be a string-->
+<!--variables which might need more digits than 'int' allows are transformed from string to long in parfix. but if you add a new 'long-->
+<!--be sure to add it there too!-->
+
+
+<!--Typical settings for ORBIT1 on STORM2-->
+<settings>
+ <!--Image/Video Settings-->
+  <pixel_size type="int">100</pixel_size>
+  <time_step type="float">20</time_step> <!--miliseconds per frame in trajectory movie -->
+  <start_frame type="int">0</start_frame>
+  <end_frame type="int">-1</end_frame> <!-- -1 for end_frame= analyze to the end -->
+  <unit type='string'>nm</unit> <!-- Option 1) nm , Option 2) px-->
+
+ 
+<!--Centering Settings-->
+<centering_strategy type="string">center_hist_max</centering_strategy>
+  <!-- Options:
+      1) center_hist_max, bins the x,y data and finds the maximum peak at the center
+      2) center_circular_trajectory, centers a circular trajectories like RecBCD
+  -->
+<center_hist_max_bins type="int">50</center_hist_max_bins>
+
+<!--Downsampling Settings-->
+<processing type="string">none</processing>
+  <!-- Options:
+      1) none
+      2) ma, moving average
+      3) downsample, downsampling
+  -->
+<downsampling_bin_size type="string">10</downsampling_bin_size>
+
+<!-- 2D Graph Settings-->
+<cmap type="string">spring_r</cmap> <!--https://matplotlib.org/2.0.2/examples/color/colormaps_reference.html-->
+<marker_size type="int">15</marker_size>
+<display_center type='int'>0</display_center>
+<expected_radius type='float'>0</expected_radius>
+<pixel_min type = 'float'>-0.75</pixel_min>
+<pixel_max type = 'float'>0.75</pixel_max>
+<nm_min type = 'float'>-150</nm_min>
+<nm_max type = 'float'>150</nm_max>
+<axis_increment_pixel type = 'float'>7</axis_increment_pixel>
+<axis_increment_nm type = 'float'>50</axis_increment_nm>
+<title type='string'>pk</title>
+
+
+
+
+</settings>
+
+
+  
