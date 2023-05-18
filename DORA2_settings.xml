@@ -49,6 +49,7 @@
 <axis_increment_pixel type = 'float'>7</axis_increment_pixel>
 <axis_increment_nm type = 'float'>50</axis_increment_nm>
 <title type='string'>pk</title>
+<frame_increment type='int'>50</frame_increment>
 
 
 
