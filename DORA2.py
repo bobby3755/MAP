@@ -165,7 +165,6 @@ def calculate_time_angle(data,center,pars=pars,**kwargs):
     # Make all negative Theta values positive equivalents
     data.loc[data.Angle < 0, ['Angle']] += 360
 
-    print("Time and Angle columns have been calculated")
     
     return data
 
@@ -340,7 +339,6 @@ def plot_2D_graph(df,fig = None, pars=pars, **kwargs):
         # Set x and y labels
         x_axis_label = "x (nm)"
         y_axis_label = "y (nm)"
-        print("labels have been set")
     
     # Jerry Adds a hover cursor
     # mplcursors.cursor(hover=True)
@@ -350,7 +348,6 @@ def plot_2D_graph(df,fig = None, pars=pars, **kwargs):
     ax.set_title(title, fontweight='bold', fontsize=16)
     ax.set_xlabel(x_axis_label, fontweight='bold', fontsize=14)
     ax.set_ylabel(y_axis_label, fontweight='bold', fontsize=14)
-    print("labels have printed")
 
     
     # plot title and font configurations
