@@ -50,6 +50,7 @@ class MyGUI(QMainWindow):
 
         #set default function values
         self.frame_increment = pars.frame_increment
+        
 
 
     def open_dir_dialog(self):
@@ -123,17 +124,23 @@ class MyGUI(QMainWindow):
     def update_2D_plot(self):
         # load slider value
         slider_value = self.frame_slider.value()
+
+        #load frame increment
+        frame_increment = self.frame_increment
         
         # clear previous plot
         self.fig_2D.clf()
 
         # load data
         df = self.data
-
-        frame_increment = self.frame_increment
+        
+        #set minimums and maximums for frame slider values
+        data_max = df.shape[0]
+        self.frame_slider.setMaximum(data_max-frame_increment)
+        self.frame_slider.setMinimum(0)
 
         # Graph
-        DORA.plot_2D_graph(df[slider_value:slider_value+frame_increment], title= self.selected_csv, fig = self.fig_2D)
+        DORA.plot_2D_graph(df[slider_value:slider_value+frame_increment], start_frame= df[slider_value:slider_value+frame_increment]["index"].min(), endframe = df[slider_value:slider_value+frame_increment]["index"].max(), title= self.selected_csv, fig = self.fig_2D)
         self.fig_2D.tight_layout()
 
         # redraw canvas
@@ -145,7 +152,10 @@ class MyGUI(QMainWindow):
         self.csv_list.clear()
         self.dir_name_edit.clear()
         print("You have cleared the CSV's")
-    
+
+
+
+        
 
         
 def get_csv_files(folder_path):

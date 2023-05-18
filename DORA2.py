@@ -290,7 +290,6 @@ def plot_2D_graph(df,fig = None, pars=pars, **kwargs):
         last_frame = df["index"].iat[-1] #in the index column, give me the last valid value --> this is the max Frames
     else:
         last_frame = end_frame
-    
 
     frame_step=int((last_frame-start_frame)/5)
 
@@ -300,6 +299,7 @@ def plot_2D_graph(df,fig = None, pars=pars, **kwargs):
     p = ax.scatter(x, y, c=c, cmap = cmap, alpha=0.7, s=marker_size)
     #add a vertical side bar that defines the color
     plt.colorbar(p, label=z_axis_label, shrink=.82, ticks=tix_1)
+    # plt.colorbar(p, label=z_axis_label, shrink=.82)
 
 
     plt.axis('square')
