@@ -37,6 +37,10 @@
   -->
 <downsampling_bin_size type="string">10</downsampling_bin_size>
 
+<!-- Graphing Super Class Settings-->
+<background_color type ="string">white</background_color>
+
+
 <!-- 2D Graph Settings-->
 <cmap type="string">spring_r</cmap> <!--https://matplotlib.org/2.0.2/examples/color/colormaps_reference.html-->
 <marker_size type="int">15</marker_size>
@@ -46,6 +50,7 @@
 <pixel_max type = 'float'>0.75</pixel_max>
 <nm_min type = 'float'>-150</nm_min>
 <nm_max type = 'float'>150</nm_max>
+<num_ticks type = 'int'>5</num_ticks>
 <axis_increment_pixel type = 'float'>7</axis_increment_pixel>
 <axis_increment_nm type = 'float'>50</axis_increment_nm>
 <title type='string'>pk</title>
