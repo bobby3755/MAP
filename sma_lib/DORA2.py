@@ -2,7 +2,9 @@ import sma_lib.MAP_Parameters as params
 import numpy as np
 import pandas as pd
 import os
-
+# Import matplotlib
+import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
 
 xmlname = "DORA2_settings"
 
@@ -10,211 +12,288 @@ xmlname = "DORA2_settings"
 pars = params.Parameters(xmlname+'.xml') #par is an object of type Parameters, defined in sa_library
 #to access parameters, use par.parameter name. eg par.start_frame
 #note these values can be manually changed: par.frameset = 200 replaces whatever was there.
-print(pars.end_frame)
+# print(pars.end_frame)
 
-def load_csv(selected_csv,dir_path,pars = pars, **kwargs):
-    '''Organizes data frame by trimming frames to start and endframe and removing invalid readings'''
-    # read CSV file into Pandas DataFrame
-    csv_path = os.path.join(dir_path, selected_csv)
-    # Read the CSV file into a DataFrame
-    df = pd.read_csv(csv_path)
+def load_csv(selected_csv, dir_path, pars=pars, **kwargs):
+    """Loads a CSV file and organizes the data frame by trimming frames and adding a time step column.
 
-    # Add an index column as the first column
-    df.insert(0, 'index', range(len(df)))
+    Args:
+        selected_csv (str): The name of the selected CSV file.
+        dir_path (str): The directory path where the CSV file is located.
+        pars (object): Optional object containing default parameters (default: pars, as defined at the top of the script).
+        **kwargs: Additional keyword arguments for customizing frame trimming:
+            - start_frame (int): The starting frame index (default: pars.start_frame).
+            - end_frame (int): The ending frame index (default: pars.end_frame).
+            - time_step (float): The time step value (default: pars.time_step).
 
-    # Rename the first four columns as 'index', 'X position', 'Y position', and 'Intensity'
-    df.columns.values[:4] = ['index','X position', 'Y position', 'Intensity']
+    Returns:
+        pandas.DataFrame: The trimmed DataFrame containing the data.
 
-    # Display the updated DataFrame
-    print(df)
+    """
 
-    pre_data = df
-
-    
-    #load in kwargs
+    # Load kwargs
     start_frame = kwargs.get('start_frame', pars.start_frame)
     end_frame = kwargs.get('end_frame', pars.end_frame)
-    time_step = kwargs.get('time_step',pars.time_step)
+    time_step = kwargs.get('time_step', pars.time_step)
 
-    #section data from frame start to frame end
+
+    # Read CSV file into Pandas DataFrame
+    csv_path = os.path.join(dir_path, selected_csv)
+    pre_data = pd.read_csv(csv_path)
+
+    # Add an index column as the first column
+    pre_data.insert(0, 'index', range(len(pre_data)))
+
+    # Rename the first four columns as 'index', 'X position', 'Y position', and 'Intensity'
+    pre_data.columns.values[:4] = ['index', 'X position', 'Y position', 'Intensity']
+
+    # Create a 'Time (ms)' column based on the index and time_step
+    pre_data.insert(1, 'Time (ms)', pre_data['index'] * time_step)
+
+    # Section data from frame start to frame end
     pre_data = pre_data.iloc[start_frame:end_frame]
 
-    # create a boolean array of where 1s are when x position is 0 or invalid
-    # this is bc Ryan's code exports invalid readings as (0,0)
+    print(f"[INFO] CSV Loaded: {selected_csv}")
+
+    # Display the updated DataFrame
+    print(pre_data.head(5))
+
+    return pre_data
+
+
+def remove_invalid_readings(pre_data):
+    """Remove invalid readings from the data and export filtered data.
+
+    Args:
+        pre_data (pandas.DataFrame): The input DataFrame containing the readings.
+
+    Returns:
+        tuple: A tuple containing:
+            - data (pandas.DataFrame): The filtered data without invalid readings.
+            - ind_invalid_reading (pandas.Series): A boolean series indicating the invalid readings.
+            - data_back (pandas.DataFrame): A DataFrame containing the filtered invalid readings.
+
+    """
+    # Create a boolean array where True indicates invalid readings (X position == 0)
     ind_invalid_reading = pre_data['X position'] == 0
 
-    # SEPARATE data into front and back end (front==graphing ; back == tables)
-    # if the index is not invalid (or valid) keep it and store in data
+    # Separate valid data and invalid readings
     data = pre_data[~ind_invalid_reading].copy()
-    # section the pre data for all the invalid values
     data_back = pre_data[ind_invalid_reading].copy()
 
-    # in data back develop a time colomn
-    data_back['Time (ms)'] = data_back['index']*time_step
-
-    # set all target x positions to NaN, if the reading was excluded due to invalid reading
-    data_back['X position'] = np.nan
-    # set all target y positions to NaN, if the reading was excluded due to invalid reading
-    data_back['Y position'] = np.nan
+    # Set X and Y positions to NaN for invalid readings
+    data_back.loc[ind_invalid_reading, ['X position', 'Y position']] = np.nan
     data_back['Excluded Type'] = 'Invalid Reading'
 
-    print(f" The following CSV has been read: {selected_csv}")
+    num_invalid_readings = ind_invalid_reading.sum()
+
+    print(f"[INFO] Number of Invalid Readings Removed: {num_invalid_readings}")
 
     return data, ind_invalid_reading, data_back
 
-def find_center(data, pars = pars,**kwargs):
 
-    #load kwargs
-    centering_strategy = kwargs.get('centering_strategy',pars.centering_strategy)
+def find_center(data, pars=pars, **kwargs):
+    """Finds the center of the data using a specified centering strategy.
 
-    #center
-    if centering_strategy == "center_hist_max":
-        
-        #load kwargs
-        bin_num = kwargs.get('bin_num',pars.center_hist_max_bins)
+    Args:
+        data (pandas.DataFrame): The input DataFrame containing the data.
+        pars (object): Optional object containing default parameters (default: pars, as defined at the top of the script).
+         **kwargs: Additional keyword arguments.
+            - centering_strategy (str): The centering strategy to use (default: pars.centering_strategy).
+            - bin_num (int): The number of bins for the low-resolution histogram (default: pars.center_hist_max_bins).
+            
+    Returns:
+        tuple: A tuple containing the center coordinates and the radius estimate (center, radius_estimate).
 
-        #establish values
-        x = data["X position"]
-        y = data["Y position"]
+    """
 
-        # find the center of a plot using a low resolution histogram. Find the max value of that histogram. The corresponding x and y indicies become those of the center make the center
-        H, xedges , yedges = np.histogram2d(x,y, bins = bin_num)
-
-        #find the x and y index of the maximum value histogram 
-        indMax = np.unravel_index(H.argmax(),H.shape)
-
-        #Set the value of the max x and y indexes to be the new OR(OverRidden) center
-        center = [xedges[indMax[0]],yedges[indMax[1]]]
-        radius_estimate = None
-        print(f"From {centering_strategy}, the center is {center}")
-   
+    # Load kwargs
+    centering_strategy = kwargs.get('centering_strategy', pars.centering_strategy)
+    pixel_size = kwargs.get('pixel_size',pars.pixel_size)
     
+    # Extract x and y values
+    x = data["X position"]
+    y = data["Y position"]
+
+    # Centering strategy: "center_hist_max"
+    if centering_strategy == "center_hist_max":
+
+        # Load kwargs
+        bin_num = kwargs.get('bin_num', pars.center_hist_max_bins)
+
+        # Calculate a low-resolution histogram and find the maximum value
+        H, xedges, yedges = np.histogram2d(x, y, bins=bin_num)
+
+        # Find the x and y indices of the maximum value in the histogram
+        indMax = np.unravel_index(H.argmax(), H.shape)
+
+        # Set the max x and y indices as the new center coordinates
+        center = [xedges[indMax[0]], yedges[indMax[1]]]
+        radius_estimate = None
+        print(f"[INFO] From {centering_strategy}, the center is {center}")
+
+    # Centering strategy: "center_circular_trajectory"
     if centering_strategy == "center_circular_trajectory":
 
         total_guesses = 10000
         n = 2
-        num_points = int(total_guesses**(1/n))
+        num_points = int(total_guesses ** (1 / n))
 
-        # find uniform guesses in range of max and min unaltered data values for y position
-        guess_y = np.linspace(data.iloc[:, 2].max(), data.iloc[:, 2].min(), num_points)
+        # Generate uniform guesses for y position
+        guess_y = np.linspace(y.max(), y.min(), num_points)
 
-        # find guesses for x position
-        guess_x = np.linspace(data.iloc[:, 1].max(), data.iloc[:, 1].min(), num_points)
+        # Generate guesses for x position
+        guess_x = np.linspace(x.max(), x.min(), num_points)
 
-        # permute each x and y center guess together to create 10,000 unique center guesses
+        # Generate center guesses by permuting x and y guesses
         center_x, center_y = np.meshgrid(guess_x, guess_y)
         center_guesses = np.column_stack((center_x.ravel(), center_y.ravel()))
 
-        # calculate distances between each point in the data and all center guesses
-        distances = np.sqrt((np.array(data['X position'])[:, np.newaxis] - center_guesses[:, 0])**2 + 
-                            (np.array(data['Y position'])[:, np.newaxis] - center_guesses[:, 1])**2)
+        # Calculate distances between each point in the data and all center guesses
+        distances = np.sqrt(
+            (np.array(data['X position'])[:, np.newaxis] - center_guesses[:, 0]) ** 2 +
+            (np.array(data['Y position'])[:, np.newaxis] - center_guesses[:, 1]) ** 2
+        )
 
-        # calculate average distances (radii) for each center guess
+        # Calculate average distances (radii) for each center guess
         ave_distance = np.mean(distances, axis=0)
 
-        # calculate standard deviation of distances to each point in the trajectory for each center guess
+        # Calculate standard deviation of distances for each center guess
         std = np.std(distances, axis=0)
 
-        # find the index of the center guess with the lowest std
+        # Find the index of the center guess with the lowest std
         target_row = np.argmin(std)
 
-        # retrieve the center coordinates and radius for the best guess
+        # Retrieve the center coordinates and radius for the best guess
         center_x = center_guesses[target_row, 0]
         center_y = center_guesses[target_row, 1]
         radius_estimate = ave_distance[target_row]
         center = (center_x, center_y)
-        print(f"From {centering_strategy}, the center is {center} with a radius of {radius_estimate}")
+        print(f"[INFO] From {centering_strategy}, the center is {center} with a radius of {round(radius_estimate * pixel_size,4)} nm")
 
     return center, radius_estimate
 
-def calculate_time_angle(data,center,pars=pars,**kwargs):
 
-    #unload pixel size
-    pixel_size = kwargs.get('pixel_size',pars.pixel_size)
-    time_step = kwargs.get('time_step',pars.time_step)
+def generate_centered_data(data, center):
+    """Generates centered data by subtracting the center coordinates.
 
-    ## Step 1: center the data
-    # substract averages from each column to find displacement, store into new columns
-    data["X displacement (pixels)"] = data['X position'] - center[0]
-    data["Y displacement (pixels)"] = data['Y position'] - center[1]
-    ## Step 2: Convert pixels to nm
-    data["X displacement (nm)"] = data['X displacement (pixels)']*pixel_size
-    data["Y displacement (nm)"] = data['Y displacement (pixels)']*pixel_size
+    Args:
+        x (pandas.Series or array-like): The x-coordinate data.
+        y (pandas.Series or array-like): The y-coordinate data.
+        center (tuple): The center coordinates (x, y).
 
-    ## Step 3; Create time step
-    data["Time (ms)"] = data['index']*time_step
+    Returns:
+        tuple: The x and y displacement arrays after centering.
 
-    # Recalculation of center using distance forumla -- Jerry
-    # Radius Calculation from distance formula
-    data['Radius (nm)'] = np.power(((data["X displacement (nm)"])
-                                    ** 2 + (data["Y displacement (nm)"])**2), 0.5)
+    """
+
+    # Extract x and y values
+    x = data["X position"]
+    y = data["Y position"]
+
+    # Subtract center coordinates from each position column to find displacement and store in new columns
+    data["X displacement (pixel)"] = x - center[0]
+    data["Y displacement (pixel)"] = y - center[1]
+
+    return data
+
+
+def calculate_angle(data, pars=pars, **kwargs):
+    """Calculates the angle based on the given data.
+
+    Args:
+        data (pandas.DataFrame): The input DataFrame containing the data.
+        pars (object): Optional object containing default parameters (default: pars, as defined at the top of the script).
+        **kwargs: Additional keyword arguments.
+            - processing (str): The type of processing to apply (default: pars.processing).
+            - bin_size (int): The size of the bin for moving average or downsampling (default: pars.downsampling_bin_size).
+            - start_frame (int): The starting frame index for downsampling (default: pars.start_frame).
+            - end_frame (int): The ending frame index for downsampling (default: pars.end_frame).
+
+    Returns:
+        pandas.DataFrame: The DataFrame with calculated angle values.
+
+    """
+
+    # Recalculation of center using distance formula -- Jerry
+    data['Radius (nm)'] = np.sqrt(data["X displacement (pixel)"]**2 + data["Y displacement (pixel)"]**2)
 
     # Z score calculation
-    import scipy.stats as stats  # added to calculate z-score for Radius filtering
+    import scipy.stats as stats  # Importing scipy.stats for calculating z-score
     data['z-score Rad'] = stats.zscore(data["Radius (nm)"])
 
     # Angle Calculation
 
     # Radian to degree conversion factor
-    r2d = 180/np.pi
+    r2d = 180 / np.pi
 
-    # Take Arc Tan function of x and y coord to get radius. Arctan 2 makes Quad 3 and 4 negative.
-    data['Angle'] = -np.arctan2(data['Y displacement (nm)'],
-                                data['X displacement (nm)'])*r2d
+    # Calculate the angle using arctan2 function
+    data['Angle'] = -np.arctan2(data['Y displacement (pixel)'], data['X displacement (pixel)']) * r2d
 
     # Make all negative Theta values positive equivalents
-    data.loc[data.Angle < 0, ['Angle']] += 360
+    data.loc[data.Angle < 0, 'Angle'] += 360
 
-    
     return data
 
-def downsample(data,pars = pars, **kwargs):
 
-    #estabilsh processing type
-    processing = kwargs.get('processing',pars.processing)
+def downsample(data, pars=pars, **kwargs):
+    """Performs downsampling on the data based on the specified processing type.
+
+    Args:
+        data (pandas.DataFrame): The input DataFrame containing the data.
+        pars (object): Optional object containing default parameters (default: pars, as defined at the top of the script).
+        **kwargs: Additional keyword arguments.
+            - processing (str): The type of processing to apply (default: pars.processing).
+            - bin_size (int): The size of the bin for moving average or downsampling (default: pars.downsampling_bin_size).
+            - start_frame (int): The starting frame index for downsampling (default: pars.start_frame).
+            - end_frame (int): The ending frame index for downsampling (default: pars.end_frame).
+
+    Returns:
+        pandas.DataFrame: The downsampled DataFrame based on the specified processing type.
+
+    """
+
+    # Establish processing type from kwargs
+    processing = kwargs.get('processing', pars.processing)
 
     if processing == "none":
         df = data
+        print(f"[INFO] Data has been processed: {processing}")
         return df
-    
+
     if processing == "moving average":
+        bin_size = kwargs.get('bin_size', pars.downsampling_bin_size)
 
-        bin_size = kwargs.get('bin_size',pars.downsampling_bin_size)
-
-         # Simple Moving Average or "filter" dataframe:
+        # Simple Moving Average or "filter" dataframe:
         ma = pd.DataFrame(data.iloc[:, 0], columns=['index'])
         window = bin_size
 
-        # for each column after the first (index) apply moving average filter
+        # Apply moving average filter to each column after the first (index)
         for col in data.columns[1:]:
             ma[col] = data[col].rolling(window=window).mean()
 
-        # Remove NaN's
-        # In moving avg, all indices less than bin_size will be NaN 
-        ma = ma.apply(pd.to_numeric, errors='coerce') 
+        # Remove NaN values (indices less than bin_size will be NaN)
+        ma = ma.apply(pd.to_numeric, errors='coerce')
         ma = ma.dropna()
 
         # Reset index
         ma = ma.reset_index(drop=True)
-        
-        df = ma
-        return df
-    
+
+        print(f"Data has been processed: {processing}")
+
+        return ma
+
     if processing == "downsample":
-        # Create copy of data dataframe
+        # Create a copy of the data dataframe
         da = data.copy()
 
-        # define downsampling average function
-        # This function taken from https://stackoverflow.com/questions/10847660/subsampling-averaging-over-a-numpy-array
-        # allows us to downsample by averages over a set number
-        # (change 'n' to the number of values you want to average over)
-
+        # Define downsampling average function
         def average_column(df, col_num, n):
-            arr = df.iloc[:, col_num].values 
-            end = n * int(len(arr)/n) 
+            arr = df.iloc[:, col_num].values
+            end = n * int(len(arr) / n)
             return np.mean(arr[:end].reshape(-1, n), 1)
 
-        # Iterate over columns of da except for the first column (index column)
+        # Iterate over columns of da (except for the first index column)
         col_names = list(da.columns)
         averaged_cols = []
         for col_name in col_names:
@@ -225,131 +304,151 @@ def downsample(data,pars = pars, **kwargs):
         dsa = pd.DataFrame(averaged_cols).T
         dsa.columns = da.columns
 
-        import math
-        start_frame = math.floor(start_frame/bin_size)
-        end_frame = math.floor(end_frame/bin_size)
+        # Adjust start_frame and end_frame
+        start_frame = kwargs.get('start_frame', pars.start_frame)
+        end_frame = kwargs.get('end_frame', pars.end_frame)
+        start_frame = math.floor(start_frame / bin_size)
+        end_frame = math.floor(end_frame / bin_size)
 
-        df = dsa
-        return df, start_frame, end_frame
-    print(f"Data has been processed:{processing}")
+        print(f"Data has been processed: {processing}")
 
-def plot_2D_graph(df,fig = None, pars=pars, **kwargs):
-    ''''''
+        return dsa, start_frame, end_frame
 
-    # load kwargs
-    start_frame = kwargs.get('start_frame',pars.start_frame)
-    end_frame = kwargs.get('end_frame',pars.end_frame)
-    unit = kwargs.get('unit',pars.unit)
-    cmap = kwargs.get('cmap',pars.cmap)
-    marker_size = kwargs.get('marker_size',pars.marker_size)
-    display_center = kwargs.get('display_center',pars.display_center)
-    expected_radius = kwargs.get('expected_radius',pars.expected_radius)
+    
+def plot_2D_graph(df, fig=None, column_headers=None, pars=pars, **kwargs):
+    """Plots a 2D graph based on the provided DataFrame.
+
+    Args:
+        df (pandas.DataFrame or numpy.ndarray): The input DataFrame or array containing the data.
+        fig (matplotlib.figure.Figure): Optional predefined figure (default: None).
+        column_headers (list): Optional list of column headers for the array data (default: None).
+        pars (object): Optional object containing default parameters (default: pars, as defined at the top of the script).
+        **kwargs: Additional keyword arguments.
+            - unit (str): The unit of measurement for the displacement values ('pixel' or 'nm') (default: pars.unit).
+            - cmap (str): The colormap to use for the scatter plot (default: pars.cmap).
+            - marker_size (float): The size of the markers in the scatter plot (default: pars.marker_size).
+            - display_center (int): Whether to display the center point on the graph (1 for yes, 0 for no) (default: pars.display_center).
+            - expected_radius (float): The expected radius for the circular marker (default: pars.expected_radius).
+            - pixel_min (float): The minimum value for the pixel axis (default: pars.pixel_min).
+            - pixel_max (float): The maximum value for the pixel axis (default: pars.pixel_max).
+            - nm_min (float): The minimum value for the nm axis (default: pars.nm_min).
+            - nm_max (float): The maximum value for the nm axis (default: pars.nm_max).
+            - axis_increment_pixel (float): The increment value for the pixel axis ticks (default: pars.axis_increment_pixel).
+            - axis_increment_nm (float): The increment value for the nm axis ticks (default: pars.axis_increment_nm).
+            - title (str): The title of the graph (default: pars.title).
+
+    Returns:
+        matplotlib.figure.Figure: The generated figure.
+
+    """
+
+    # Load kwargs
+    unit = kwargs.get('unit', pars.unit)
+    cmap = kwargs.get('cmap', pars.cmap)
+    marker_size = kwargs.get('marker_size', pars.marker_size)
+    display_center = kwargs.get('display_center', pars.display_center)
+    expected_radius = kwargs.get('expected_radius', pars.expected_radius)
+    pixel_size = kwargs.get('pixel_size',pars.pixel_size)
     pixel_min = kwargs.get('pixel_min', pars.pixel_min)
     pixel_max = kwargs.get('pixel_max', pars.pixel_max)
     nm_min = kwargs.get('nm_min', pars.nm_min)
     nm_max = kwargs.get('nm_max', pars.nm_max)
+    num_ticks = kwargs.get('num_ticks', pars.num_ticks)
     axis_increment_pixel = kwargs.get('axis_increment_pixel', pars.axis_increment_pixel)
     axis_increment_nm = kwargs.get('axis_increment_nm', pars.axis_increment_nm)
-    title = kwargs.get('title',pars.title)
+    title = kwargs.get('title', pars.title)
 
-    #import
-    import matplotlib.pyplot as plt
 
-    # If figure and axes are not predefined inputs, make them
+    # If figure is not predefined, create a new figure
     if fig is None:
-        fig, ax = plt.subplots(1,1,figsize=(7, 6))
+        fig, ax = plt.subplots(1, 1, figsize=(7, 6))
     else:
+        fig.clf()
         ax = fig.add_subplot(111)
-    
+
+    if isinstance(df, np.ndarray):
+        # Convert array into DataFrame with columns
+        df = pd.DataFrame(df, columns=column_headers)
+
     # Data assignment
-    # Here the code determines the units of the graph, only for cartesian graphs
     if unit == "pixel":
-        x = df["X displacement (pixels)"]
-        y = df["Y displacement (pixels)"]
-    if unit == "nm":
-        x = df["X displacement (nm)"]
-        y = df["Y displacement (nm)"]
-    z = df["Time (ms)"]
-   
+        x = df["X displacement (pixel)"]
+        y = df["Y displacement (pixel)"]
+    elif unit == "nm":
+        x = df["X displacement (pixel)"] * pixel_size
+        y = df["Y displacement (pixel)"] * pixel_size
+    z = df["index"]
+
+    # Scatter plot with color vector
+    sc = ax.scatter(x, y, c=z, cmap=cmap, alpha=0.7, s=marker_size)
+
+    # Set up color bar
+    cbar = plt.colorbar(sc)
+    z_axis_label = "Frames"
     
-    
-        
+    # Calculate the tick locations
+    num_ticks = num_ticks-1 # correction factor because the bottom one doesn't count internally
+    min_val = np.min(z)
+    max_val = np.max(z)
+    tick_locs = np.arange(min_val, max_val + 1, (max_val - min_val) / num_ticks)
 
-    # Set up for color bar
-    z_axis_label = "Frames" 
+    # Set the tick locations on the color bar
+    cbar.locator = ticker.FixedLocator(tick_locs)
 
-    # A color bar associated with time needs two things c and cmap
-    #these arguments go into ax.scatter as args
+    # Format the tick labels as integers
+    cbar.formatter = ticker.FuncFormatter(lambda x, pos: f"{int(x)}")
 
-    # c (A scalar or sequence of n numbers to be mapped to colors using cmap and norm.)
-    c = df["index"]
+    # Update the color bar with the new tick locations and labels
+    cbar.update_ticks()
 
-    #Make a ticks vector that spans the total number of frames
-    # There is a bug because linspace doesn't understand what -1 is but the sequence does
-    if end_frame == -1:   # negative 1
-        last_frame = df["index"].iat[-1] #in the index column, give me the last valid value --> this is the max Frames
-    else:
-        last_frame = end_frame
-
-    frame_step=int((last_frame-start_frame)/5)
-
-    tix_1=np.arange(start_frame,last_frame,frame_step)
-
-    #scatter plot with a color vector
-    p = ax.scatter(x, y, c=c, cmap = cmap, alpha=0.7, s=marker_size)
-    #add a vertical side bar that defines the color
-    plt.colorbar(p, label=z_axis_label, shrink=.82, ticks=tix_1)
-    # plt.colorbar(p, label=z_axis_label, shrink=.82)
+    # Set the label for the color bar
+    cbar.set_label(z_axis_label)
 
 
     plt.axis('square')
     plt.xticks(rotation=45)
     circle2 = plt.Circle((0, 0), expected_radius, color='m', fill=False)
-    
     ax.add_patch(circle2)
 
-    # display center
+    # Display center
     if display_center == 1:
-        # in a centered graph, the center is actually(0,0)
         center1 = [0, 0]
-        # plots center point as magenta X
         ax.scatter(0, 0, color='Magenta', marker="X", s=150)
-        plt.text(x=center1[0] + 0.02,
-                    y=center1[1] + 0.02, s='CENTER')
+        plt.text(x=center1[0] + 0.02, y=center1[1] + 0.02, s='CENTER')
 
-    # set graph limit conditions depending on unit specified
+    # Set graph limits and labels based on unit
     if unit == "pixel":
         ax.set_xlim(pixel_min, pixel_max)
         ax.set_ylim(pixel_min, pixel_max)
-        # Set the x and y tick increments
         ax.set_xticks(np.arange(pixel_min, pixel_max, axis_increment_pixel))
         ax.set_yticks(np.arange(pixel_min, pixel_max, axis_increment_pixel))
         x_axis_label = "x (px)"
         y_axis_label = "y (px)"
-    if unit == "nm":
-
-        # Set x and y limits
+    elif unit == "nm":
         ax.set_xlim(nm_min, nm_max)
         ax.set_ylim(nm_min, nm_max)
-        
-        # Set the x and y tick increments
         ax.set_xticks(np.arange(nm_min, nm_max, axis_increment_nm))
         ax.set_yticks(np.arange(nm_min, nm_max, axis_increment_nm))
-        
-        # Set x and y labels
         x_axis_label = "x (nm)"
         y_axis_label = "y (nm)"
-    
-    # Jerry Adds a hover cursor
-    # mplcursors.cursor(hover=True)
-    # mplcursors.cursor(highlight=True)
 
-    # Title axis labels and font configurations
+    # Set title, axis labels, and font configurations
     ax.set_title(title, fontweight='bold', fontsize=16)
     ax.set_xlabel(x_axis_label, fontweight='bold', fontsize=14)
     ax.set_ylabel(y_axis_label, fontweight='bold', fontsize=14)
 
-    
-    # plot title and font configurations
+    # # Add hover cursor
+    # mplcursors.cursor(hover=True)
+    # mplcursors.cursor(highlight=True)
+def plot_angular_continuous(df, fig=None, pars=pars, **kwargs):
 
-    # plt.title(pk, fontweight='bold', fontsize=16)
+    
+
+    # If figure is not predefined, create a new figure
+    if fig is None:
+        fig, ax = plt.subplots(1, 1, figsize=(7, 6))
+    else:
+        fig.clf()
+        ax = fig.add_subplot(111)
+
+    
