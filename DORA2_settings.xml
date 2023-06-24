@@ -37,7 +37,21 @@
   -->
 <downsampling_bin_size type="string">10</downsampling_bin_size>
 
-<!-- Graphing Super Class Settings-->
+<!-- Angle Continuous Calculations-->
+
+<!-- <angle_calculations > -->
+<rad_filter_type_lower type='string'>nm</rad_filter_type_lower>  <!-- Set the lower radius filter type to 'nm' -->
+<rad_filter_type_upper type='string'>zscore</rad_filter_type_upper>  <!-- Set the upper radius filter type to 'zscore' -->
+<z_up type='float'>3.0</z_up>  <!-- Set the upper bound for z score to 3 -->
+<z_down type='float'>-3.0</z_down>  <!-- Set the lower bound for z score to -3 -->
+<dist_low type='float'>30.0</dist_low>  <!-- Set the lower bound for absolute value of Radius filter to 30 -->
+<dist_high type='float'>70.0</dist_high>  <!-- Set the upper bound for absolute value of Radius filter to 70 -->
+<filter_nopass type='int'>0</filter_nopass>  <!-- Set the filter to not pass non-passing values -->
+<annotate_nopass type='int'>1</annotate_nopass>  <!-- Set the annotation to annotate times of non-passing values -->
+
+
+
+<!-- General Graph Settings-->
 <background_color type ="string">white</background_color>
 
 
@@ -56,6 +70,18 @@
 <title type='string'>pk</title>
 <frame_increment type='int'>50</frame_increment>
 
+<!-- Angle vs Time Graph Settings-->
+<angle_vs_time_style type='string'>line</angle_vs_time_style>
+  <!-- Options:
+      1) scatter
+      2) line
+  -->
+<angle_vs_time_color type='string'>#e444e4</angle_vs_time_color>
+<angle_vs_time_xlabel type = 'string'>Frames</angle_vs_time_xlabel>
+  <!-- Options:
+      1) Frames
+      2) Time (ms)
+  -->
 
 
 

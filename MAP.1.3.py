@@ -41,12 +41,19 @@ class MyGUI(QMainWindow):
         # Connect the clear selection button with clear csv function
         self.clear_csvs_btn.clicked.connect(self.clear_csv_list)
 
-        # set up figure and canvas
+        # set up figure and canvas for Intensity graph
+        self.fig_2 = plt.figure()
+        self.canvas_2 = FigureCanvas(self.fig_2)
+        self.toolbar_2 = NavigationToolbar(self.canvas_2,self.centralwidget)
+        self.graphLayout_2.addWidget(self.toolbar_2)
+        self.graphLayout_2.addWidget(self.canvas_2)
+
+        # set up figure and canvas for 2D graph
         self.fig_2D = plt.figure()
-        self.canvas = FigureCanvas(self.fig_2D)
-        self.toolbar = NavigationToolbar(self.canvas,self.centralwidget)
-        self.verticalLayout_3.addWidget(self.toolbar)
-        self.verticalLayout_3.addWidget(self.canvas)
+        self.canvas_2D = FigureCanvas(self.fig_2D)
+        self.toolbar_2D = NavigationToolbar(self.canvas_2D,self.centralwidget)
+        self.graphLayout_2D.addWidget(self.toolbar_2D)
+        self.graphLayout_2D.addWidget(self.canvas_2D)
         
         # Intialize value of Line Edit:
         self.frame_increment_LineEdit.setText(str(pars.frame_increment))
@@ -143,12 +150,17 @@ class MyGUI(QMainWindow):
         # clear previous plot
         self.fig_2D.clf()
         
-        # graph
+        # 2D graph
         DORA.plot_2D_graph(self.data, title = self.selected_csv, fig = self.fig_2D)
-
         self.fig_2D.tight_layout()
+
+        # Angle vs Time Graph
+        DORA.plot_angular_continuous(self.data, title = self.selected_csv, fig = self.fig_2)
+        self.fig_2.tight_layout()
+
         # redraw canvas
-        self.canvas.draw()
+        self.canvas_2.draw()
+        self.canvas_2D.draw()
 
     def update_input_values(self):
         
@@ -234,9 +246,6 @@ class MyGUI(QMainWindow):
         # NOTE: you need to subtract the minimum value otherwise you will index more than you need to when min ~= 0 
         slider_index = self.frame_slider.value() - self.frame_slider.minimum()
 
-        # clear previous plot
-        self.fig_2D.clf()
-        
         # Index a subset to graph
         subset_array = self.data_array[slider_index : slider_index + self.frame_increment,:]
 
@@ -248,11 +257,10 @@ class MyGUI(QMainWindow):
         # ... perform your 2D graph plotting using subset_array ...
         # ... replace the following code with your actual graph plotting code ...
         DORA.plot_2D_graph(subset_array, column_headers= self.data.columns, start_frame= min_index, endframe = max_index, title= self.selected_csv, fig = self.fig_2D)
-
-        self.fig_2D.tight_layout()
+        # self.fig_2D.tight_layout()
 
         # redraw canvas
-        self.canvas.draw()
+        self.canvas_2D.draw()
 
     def clear_csv_list(self):
         self.csv_list.clear()

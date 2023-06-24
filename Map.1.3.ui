@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>843</width>
-    <height>667</height>
+    <width>1531</width>
+    <height>724</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -19,8 +19,8 @@
      <rect>
       <x>10</x>
       <y>10</y>
-      <width>821</width>
-      <height>611</height>
+      <width>1511</width>
+      <height>671</height>
      </rect>
     </property>
     <property name="frameShape">
@@ -31,9 +31,9 @@
     </property>
     <layout class="QGridLayout" name="gridLayout">
      <item row="0" column="0">
-      <layout class="QVBoxLayout" name="verticalLayout_4">
+      <layout class="QVBoxLayout" name="verticalLayout_4" stretch="1,0">
        <item>
-        <layout class="QHBoxLayout" name="horizontalLayout_7" stretch="0,0,0">
+        <layout class="QHBoxLayout" name="horizontalLayout_7" stretch="1,0,4,0,5">
          <item>
           <layout class="QVBoxLayout" name="side_bar">
            <item>
@@ -88,7 +88,7 @@
                 <item>
                  <widget class="QLabel" name="label_9">
                   <property name="text">
-                   <string>Sliders:</string>
+                   <string>Parameters:</string>
                   </property>
                  </widget>
                 </item>
@@ -354,34 +354,17 @@
                <property name="text">
                 <string>2D Plot:</string>
                </property>
-              </widget>
-             </item>
-             <item>
-              <spacer name="horizontalSpacer_5">
-               <property name="orientation">
-                <enum>Qt::Horizontal</enum>
-               </property>
-               <property name="sizeHint" stdset="0">
-                <size>
-                 <width>40</width>
-                 <height>20</height>
-                </size>
-               </property>
-              </spacer>
-             </item>
-             <item>
-              <widget class="QPushButton" name="pushButton_2">
-               <property name="text">
-                <string>Re-center</string>
+               <property name="alignment">
+                <set>Qt::AlignCenter</set>
                </property>
               </widget>
              </item>
             </layout>
            </item>
            <item>
-            <layout class="QVBoxLayout" name="verticalLayout_3">
+            <layout class="QVBoxLayout" name="graphLayout_2D">
              <property name="sizeConstraint">
-              <enum>QLayout::SetMinimumSize</enum>
+              <enum>QLayout::SetMinAndMaxSize</enum>
              </property>
             </layout>
            </item>
@@ -389,6 +372,53 @@
             <widget class="QSlider" name="frame_slider">
              <property name="orientation">
               <enum>Qt::Horizontal</enum>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <spacer name="horizontalSpacer_10">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+         <item>
+          <layout class="QVBoxLayout" name="verticalLayout_7">
+           <item>
+            <widget class="QComboBox" name="second_graph_comboBox">
+             <item>
+              <property name="text">
+               <string>Continuous Angle vs Time</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>Intensity vs Time</string>
+              </property>
+             </item>
+            </widget>
+           </item>
+           <item>
+            <layout class="QVBoxLayout" name="graphLayout_2"/>
+           </item>
+           <item>
+            <widget class="QLabel" name="label_2">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="text">
+              <string>TextLabel</string>
              </property>
             </widget>
            </item>
@@ -419,7 +449,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>843</width>
+     <width>1531</width>
      <height>21</height>
     </rect>
    </property>
