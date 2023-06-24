@@ -1,10 +1,11 @@
 import sma_lib.MAP_Parameters as params
+import sma_lib.AngleCalc as AngleCalc
 import numpy as np
 import pandas as pd
 import os
-# Import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
+# import mplcursors
 
 xmlname = "DORA2_settings"
 
@@ -216,11 +217,12 @@ def calculate_angle(data, pars=pars, **kwargs):
     """
 
     # Recalculation of center using distance formula -- Jerry
-    data['Radius (nm)'] = np.sqrt(data["X displacement (pixel)"]**2 + data["Y displacement (pixel)"]**2)
-
+    data['Radius (pixel)'] = np.sqrt(data["X displacement (pixel)"]**2 + data["Y displacement (pixel)"]**2)
+    
     # Z score calculation
     import scipy.stats as stats  # Importing scipy.stats for calculating z-score
-    data['z-score Rad'] = stats.zscore(data["Radius (nm)"])
+    data['z-score Rad'] = stats.zscore(data["Radius (pixel)"])
+
 
     # Angle Calculation
 
@@ -232,6 +234,12 @@ def calculate_angle(data, pars=pars, **kwargs):
 
     # Make all negative Theta values positive equivalents
     data.loc[data.Angle < 0, 'Angle'] += 360
+
+    ##### Start to calculate angular continuous
+
+    #Calculate
+    data, data_filtered_pass, data_filtered_nopass, data_filtered_lower_bound_nopass, data_filtered_upper_bound_nopass = AngleCalc.conti_angle_calc(data)
+    print("[INFO] Updated angle calculations have been calculated")
 
     return data
 
@@ -361,9 +369,11 @@ def plot_2D_graph(df, fig=None, column_headers=None, pars=pars, **kwargs):
 
     # If figure is not predefined, create a new figure
     if fig is None:
-        fig, ax = plt.subplots(1, 1, figsize=(7, 6))
+        fig, ax = plt.subplots(1, 1)
+        fig.set_size_inches(5.5,5)
     else:
         fig.clf()
+        fig.set_size_inches(5.5,5)
         ax = fig.add_subplot(111)
 
     if isinstance(df, np.ndarray):
@@ -401,8 +411,7 @@ def plot_2D_graph(df, fig=None, column_headers=None, pars=pars, **kwargs):
     # Update the color bar with the new tick locations and labels
     cbar.update_ticks()
 
-    # Set the label for the color bar
-    cbar.set_label(z_axis_label)
+    
 
 
     plt.axis('square')
@@ -436,19 +445,59 @@ def plot_2D_graph(df, fig=None, column_headers=None, pars=pars, **kwargs):
     ax.set_title(title, fontweight='bold', fontsize=16)
     ax.set_xlabel(x_axis_label, fontweight='bold', fontsize=14)
     ax.set_ylabel(y_axis_label, fontweight='bold', fontsize=14)
+    cbar.set_label(z_axis_label, fontweight='bold', fontsize=12)
 
     # # Add hover cursor
     # mplcursors.cursor(hover=True)
     # mplcursors.cursor(highlight=True)
 def plot_angular_continuous(df, fig=None, pars=pars, **kwargs):
-
-    
+   
+    # Load kwargs
+    angle_vs_time_style = kwargs.get('angle_vs_time_style', pars.angle_vs_time_style)
+    angle_vs_time_color = kwargs.get('angle_vs_time_color', pars.angle_vs_time_color)
+    angle_vs_time_xlabel = kwargs.get('angle_vs_time_xlabel', pars.angle_vs_time_xlabel)
+    filter_nopass = kwargs.get('filter_nopass', pars.filter_nopass)
+    annotate_nopass = kwargs.get('annotate_nopass', pars.annotate_nopass) 
 
     # If figure is not predefined, create a new figure
     if fig is None:
-        fig, ax = plt.subplots(1, 1, figsize=(7, 6))
+        fig, ax = plt.subplots(1, 1)
+        # fig.set_size_inches(5.5,5)s
     else:
+        # fig.set_size_inches(5,5)
         fig.clf()
         ax = fig.add_subplot(111)
 
+    # define x axlis label
+    if angle_vs_time_xlabel == "Frames":
+        times = df["index"]
+        x_axis_label = "Frames"
+    elif angle_vs_time_xlabel == "Time (ms)":
+        times = df["Times (ms)"]
+        x_axis_label = "Time (ms)"
+    else:
+        ValueError("[ERROR] entered angle_vs_time_xlabel is one of the executable options.")
+
+    # choose scatter plot or line plot
+    if angle_vs_time_style == 'scatter':
+        avt_graph = ax.scatter(times, df["Continuous Angle"], color=angle_vs_time_color, s=5)
+    elif angle_vs_time_style == 'line':
+        avt_graph = ax.plot(times, df["Continuous Angle"],  color=angle_vs_time_color)
+
+    # Set Title and y axis label
+    title = "Continuous Angle vs time"
+    y_axis_label = 'Angle Accumulation (degrees)'
+
+    # Set title, axis labels, and font configurations
+    ax.set_title(title, fontweight='bold', fontsize=16)
+    ax.set_xlabel(x_axis_label, fontweight='bold', fontsize=14)
+    ax.set_ylabel(y_axis_label, fontweight='bold', fontsize=14)
     
+   
+    # Enable interactive cursor
+    # cursor = mplcursors.cursor(hover=True)
+
+    # Show the plot
+    # plt.show()
+    
+    # Graph the newly calcuated Angular Continuous data, now filtered for good points only
