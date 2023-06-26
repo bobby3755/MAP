@@ -501,3 +501,43 @@ def plot_angular_continuous(df, fig=None, pars=pars, **kwargs):
     # plt.show()
     
     # Graph the newly calcuated Angular Continuous data, now filtered for good points only
+
+def plot_intensity_time(df, fig=None, pars=pars, **kwargs):
+
+    intensity_vs_time_style = kwargs.get('intensity_vs_time_style', pars.intensity_vs_time_style)
+    intensity_vs_time_color = kwargs.get('intensity_vs_time_color', pars.intensity_vs_time_color)
+    intensity_vs_time_xlabel = kwargs.get('intensity_vs_time_xlabel', pars.intensity_vs_time_xlabel)
+
+     # If figure is not predefined, create a new figure
+    if fig is None:
+        fig, ax = plt.subplots(1, 1)
+        # fig.set_size_inches(5.5,5)s
+    else:
+        # fig.set_size_inches(5,5)
+        fig.clf()
+        ax = fig.add_subplot(111)
+
+    # define x axlis label
+    if intensity_vs_time_xlabel == "Frames":
+        frames = df["index"]
+        x_axis_label = "Frames"
+    elif intensity_vs_time_xlabel == "Time (ms)":
+        frames = df["Times (ms)"]
+        x_axis_label = "Time (ms)"
+    else:
+        ValueError("[ERROR] entered intensity_vs_time_xlabel is one of the executable options.")
+
+    # choose scatter plot or line plot
+    if intensity_vs_time_style == 'scatter':
+        avt_graph = ax.scatter(frames, df["Intensity"], color=intensity_vs_time_color, s=5)
+    elif intensity_vs_time_style == 'line':
+        avt_graph = ax.plot(frames, df["Intensity"],  color=intensity_vs_time_color)
+
+    # Set Title and y axis label
+    title = "Intensity vs Frames"
+    y_axis_label = 'Intensity (a.u.)'
+
+    # Set title, axis labels, and font configurations
+    ax.set_title(title, fontweight='bold', fontsize=16)
+    ax.set_xlabel(x_axis_label, fontweight='bold', fontsize=14)
+    ax.set_ylabel(y_axis_label, fontweight='bold', fontsize=14)

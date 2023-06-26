@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1531</width>
-    <height>724</height>
+    <width>1535</width>
+    <height>734</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -33,7 +33,7 @@
      <item row="0" column="0">
       <layout class="QVBoxLayout" name="verticalLayout_4" stretch="1,0">
        <item>
-        <layout class="QHBoxLayout" name="horizontalLayout_7" stretch="1,0,4,0,5">
+        <layout class="QHBoxLayout" name="horizontalLayout_7" stretch="1,0,9,0,10">
          <item>
           <layout class="QVBoxLayout" name="side_bar">
            <item>
@@ -102,7 +102,7 @@
                    </widget>
                   </item>
                   <item>
-                   <spacer name="horizontalSpacer_6">
+                   <spacer name="horizontalSpacer_5">
                     <property name="orientation">
                      <enum>Qt::Horizontal</enum>
                     </property>
@@ -116,6 +116,18 @@
                   </item>
                   <item>
                    <widget class="QLineEdit" name="frame_increment_LineEdit">
+                    <property name="sizePolicy">
+                     <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                     </sizepolicy>
+                    </property>
+                    <property name="maximumSize">
+                     <size>
+                      <width>70</width>
+                      <height>16777215</height>
+                     </size>
+                    </property>
                     <property name="alignment">
                      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
                     </property>
@@ -147,6 +159,18 @@
                   </item>
                   <item>
                    <widget class="QLineEdit" name="center_x_LineEdit">
+                    <property name="sizePolicy">
+                     <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                     </sizepolicy>
+                    </property>
+                    <property name="maximumSize">
+                     <size>
+                      <width>70</width>
+                      <height>16777215</height>
+                     </size>
+                    </property>
                     <property name="alignment">
                      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
                     </property>
@@ -178,6 +202,18 @@
                   </item>
                   <item>
                    <widget class="QLineEdit" name="center_y_LineEdit">
+                    <property name="sizePolicy">
+                     <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                     </sizepolicy>
+                    </property>
+                    <property name="maximumSize">
+                     <size>
+                      <width>70</width>
+                      <height>16777215</height>
+                     </size>
+                    </property>
                     <property name="alignment">
                      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
                     </property>
@@ -209,6 +245,18 @@
                   </item>
                   <item>
                    <widget class="QLineEdit" name="frame_start_LineEdit">
+                    <property name="sizePolicy">
+                     <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                     </sizepolicy>
+                    </property>
+                    <property name="maximumSize">
+                     <size>
+                      <width>70</width>
+                      <height>16777215</height>
+                     </size>
+                    </property>
                     <property name="alignment">
                      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
                     </property>
@@ -240,6 +288,18 @@
                   </item>
                   <item>
                    <widget class="QLineEdit" name="frame_end_LineEdit">
+                    <property name="sizePolicy">
+                     <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                     </sizepolicy>
+                    </property>
+                    <property name="maximumSize">
+                     <size>
+                      <width>70</width>
+                      <height>16777215</height>
+                     </size>
+                    </property>
                     <property name="alignment">
                      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
                     </property>
@@ -271,6 +331,18 @@
                   </item>
                   <item>
                    <widget class="QLineEdit" name="intensity_min_LineEdit">
+                    <property name="sizePolicy">
+                     <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                     </sizepolicy>
+                    </property>
+                    <property name="maximumSize">
+                     <size>
+                      <width>70</width>
+                      <height>16777215</height>
+                     </size>
+                    </property>
                     <property name="alignment">
                      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
                     </property>
@@ -302,6 +374,18 @@
                   </item>
                   <item>
                    <widget class="QLineEdit" name="intensity_max_LineEdit">
+                    <property name="sizePolicy">
+                     <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                     </sizepolicy>
+                    </property>
+                    <property name="maximumSize">
+                     <size>
+                      <width>70</width>
+                      <height>16777215</height>
+                     </size>
+                    </property>
                     <property name="alignment">
                      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
                     </property>
@@ -364,7 +448,7 @@
            <item>
             <layout class="QVBoxLayout" name="graphLayout_2D">
              <property name="sizeConstraint">
-              <enum>QLayout::SetMinAndMaxSize</enum>
+              <enum>QLayout::SetMinimumSize</enum>
              </property>
             </layout>
            </item>
@@ -393,18 +477,7 @@
          <item>
           <layout class="QVBoxLayout" name="verticalLayout_7">
            <item>
-            <widget class="QComboBox" name="second_graph_comboBox">
-             <item>
-              <property name="text">
-               <string>Continuous Angle vs Time</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>Intensity vs Time</string>
-              </property>
-             </item>
-            </widget>
+            <widget class="QComboBox" name="secondary_graph_comboBox"/>
            </item>
            <item>
             <layout class="QVBoxLayout" name="graphLayout_2"/>
@@ -449,7 +522,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1531</width>
+     <width>1535</width>
      <height>21</height>
     </rect>
    </property>

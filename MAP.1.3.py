@@ -36,7 +36,7 @@ class MyGUI(QMainWindow):
 
         # Connect the csvclicked in List Box to plotting function
         self.csv_list.itemClicked.connect(self.load_choosen_csv)
-        self.csv_list.itemSelectionChanged.connect(self.load_choosen_csv)
+        self.csv_list.currentItemChanged.connect(self.load_choosen_csv)
 
         # Connect the clear selection button with clear csv function
         self.clear_csvs_btn.clicked.connect(self.clear_csv_list)
@@ -47,26 +47,34 @@ class MyGUI(QMainWindow):
         self.toolbar_2 = NavigationToolbar(self.canvas_2,self.centralwidget)
         self.graphLayout_2.addWidget(self.toolbar_2)
         self.graphLayout_2.addWidget(self.canvas_2)
+        
 
         # set up figure and canvas for 2D graph
+        # self.graphLayout_2D.setMinimumSize(480, 528)
         self.fig_2D = plt.figure()
         self.canvas_2D = FigureCanvas(self.fig_2D)
         self.toolbar_2D = NavigationToolbar(self.canvas_2D,self.centralwidget)
         self.graphLayout_2D.addWidget(self.toolbar_2D)
         self.graphLayout_2D.addWidget(self.canvas_2D)
+
+        # Connect secondary_graph_comboBox to change secondary graph
+        self.secondary_graph_comboBox.activated.connect(self.update_secondary_graph)
         
         # Intialize value of Line Edit:
         self.frame_increment_LineEdit.setText(str(pars.frame_increment))
 
         # Connect the frame_slider_increment_LineEditor to the LineEdit
         self.update_frames_intensity_PushButton.clicked.connect(self.update_input_values)
+
         # Connect the frame_slider to update_2D_plot
         self.frame_slider.valueChanged.connect(self.update_2D_plot)
 
         #set default function values
         self.frame_increment = pars.frame_increment
-        
-
+        secondary_graph_options = ["Continuous Angle vs Time", "Intensity vs Time"]
+        for option in secondary_graph_options:
+            self.secondary_graph_comboBox.addItem(option)
+        self.choosen_secondary_graph = self.secondary_graph_comboBox.currentText()
 
     def open_dir_dialog(self):
         # open file dialog and get directory
@@ -153,14 +161,9 @@ class MyGUI(QMainWindow):
         # 2D graph
         DORA.plot_2D_graph(self.data, title = self.selected_csv, fig = self.fig_2D)
         self.fig_2D.tight_layout()
-
-        # Angle vs Time Graph
-        DORA.plot_angular_continuous(self.data, title = self.selected_csv, fig = self.fig_2)
-        self.fig_2.tight_layout()
-
-        # redraw canvas
-        self.canvas_2.draw()
         self.canvas_2D.draw()
+
+        self.update_secondary_graph()        
 
     def update_input_values(self):
         
@@ -261,6 +264,30 @@ class MyGUI(QMainWindow):
 
         # redraw canvas
         self.canvas_2D.draw()
+
+    def update_secondary_graph(self):
+
+        # Reset Graph Canvas
+        self.fig_2.clf()
+
+        # Redefine choosen secondary graph
+        self.choosen_secondary_graph = self.secondary_graph_comboBox.currentText()
+        self.label_2.setText(self.choosen_secondary_graph)
+
+        # If specific graph is choose, plot that graph
+        if self.choosen_secondary_graph == "Continuous Angle vs Time":
+            DORA.plot_angular_continuous(self.data, title = self.selected_csv, fig = self.fig_2)
+
+        elif self.choosen_secondary_graph == "Intensity vs Time":
+            DORA.plot_intensity_time(self.data, title = self.selected_csv, fig = self.fig_2) 
+        else:
+            ValueError("[ERROR] The choosen secondary graph combo box selection is NOT part of the approved list")
+
+        # Apply tight layout
+        self.fig_2.tight_layout()
+
+        # redraw canvas
+        self.canvas_2.draw()
 
     def clear_csv_list(self):
         self.csv_list.clear()

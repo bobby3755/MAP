@@ -53,7 +53,11 @@
 
 <!-- General Graph Settings-->
 <background_color type ="string">white</background_color>
-
+<default_secondary_graph type ="string">Continuous Angle vs Time</default_secondary_graph>
+<!-- Options:
+      1) Continuous Angle vs Time
+      2) Intensity vs  Time
+  -->
 
 <!-- 2D Graph Settings-->
 <cmap type="string">spring_r</cmap> <!--https://matplotlib.org/2.0.2/examples/color/colormaps_reference.html-->
@@ -78,6 +82,19 @@
   -->
 <angle_vs_time_color type='string'>#e444e4</angle_vs_time_color>
 <angle_vs_time_xlabel type = 'string'>Frames</angle_vs_time_xlabel>
+  <!-- Options:
+      1) Frames
+      2) Time (ms)
+  -->
+
+<!-- Intensity vs Time Graph Settings-->
+<intensity_vs_time_style type='string'>line</intensity_vs_time_style>
+  <!-- Options:
+      1) scatter
+      2) line
+  -->
+<intensity_vs_time_color type='string'>#1644B4</intensity_vs_time_color>
+<intensity_vs_time_xlabel type = 'string'>Frames</intensity_vs_time_xlabel>
   <!-- Options:
       1) Frames
       2) Time (ms)
