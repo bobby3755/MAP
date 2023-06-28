@@ -424,7 +424,7 @@
           </spacer>
          </item>
          <item>
-          <layout class="QVBoxLayout" name="verticalLayout_5" stretch="0,1,0">
+          <layout class="QVBoxLayout" name="verticalLayout_5" stretch="0,0,0">
            <item>
             <layout class="QHBoxLayout" name="horizontalLayout_10">
              <item>
@@ -446,18 +446,18 @@
             </layout>
            </item>
            <item>
-            <layout class="QVBoxLayout" name="graphLayout_2D">
-             <property name="sizeConstraint">
-              <enum>QLayout::SetMinimumSize</enum>
-             </property>
-            </layout>
-           </item>
-           <item>
             <widget class="QSlider" name="frame_slider">
              <property name="orientation">
               <enum>Qt::Horizontal</enum>
              </property>
             </widget>
+           </item>
+           <item>
+            <layout class="QVBoxLayout" name="graphLayout_2D">
+             <property name="sizeConstraint">
+              <enum>QLayout::SetMinimumSize</enum>
+             </property>
+            </layout>
            </item>
           </layout>
          </item>
