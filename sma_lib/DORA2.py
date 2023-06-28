@@ -1,11 +1,17 @@
+"""
+@author: Jerry Wu
+Version: DORA 2.0
+Last Update: 6.27.23
+
+"""
+
 import sma_lib.MAP_Parameters as params
-import sma_lib.AngleCalc as AngleCalc
 import numpy as np
 import pandas as pd
 import os
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
-# import mplcursors
+import scipy.stats as stats  # added to calculate z-score for Radius filtering
 
 xmlname = "DORA2_settings"
 
@@ -32,7 +38,7 @@ def load_csv(selected_csv, dir_path, pars=pars, **kwargs):
 
     """
 
-    # Load kwargs
+    # Extract values from XML
     start_frame = kwargs.get('start_frame', pars.start_frame)
     end_frame = kwargs.get('end_frame', pars.end_frame)
     time_step = kwargs.get('time_step', pars.time_step)
@@ -62,38 +68,48 @@ def load_csv(selected_csv, dir_path, pars=pars, **kwargs):
     return pre_data
 
 
-def remove_invalid_readings(pre_data):
-    """Remove invalid readings from the data and export filtered data.
+def remove_invalid_readings(data):
 
-    Args:
-        pre_data (pandas.DataFrame): The input DataFrame containing the readings.
-
-    Returns:
-        tuple: A tuple containing:
-            - data (pandas.DataFrame): The filtered data without invalid readings.
-            - ind_invalid_reading (pandas.Series): A boolean series indicating the invalid readings.
-            - data_back (pandas.DataFrame): A DataFrame containing the filtered invalid readings.
-
-    """
     # Create a boolean array where True indicates invalid readings (X position == 0)
-    ind_invalid_reading = pre_data['X position'] == 0
+    data['err_invalid_reading'] = data['X position'] == 0
 
-    # Separate valid data and invalid readings
-    data = pre_data[~ind_invalid_reading].copy()
-    data_back = pre_data[ind_invalid_reading].copy()
+    num_invalid_readings = data['err_invalid_reading'].sum()
 
-    # Set X and Y positions to NaN for invalid readings
-    data_back.loc[ind_invalid_reading, ['X position', 'Y position']] = np.nan
-    data_back['Excluded Type'] = 'Invalid Reading'
-
-    num_invalid_readings = ind_invalid_reading.sum()
+    err_invalid_readings = data[data['err_invalid_reading']]
 
     print(f"[INFO] Number of Invalid Readings Removed: {num_invalid_readings}")
 
-    return data, ind_invalid_reading, data_back
+    
+def remove_nopass_intensity_filter(data, min_intensity = None, max_intensity = None):
+
+    # create error columns
+    data["err_intensity_filter_low"] = data["Intensity"] < min_intensity
+    data["err_intensity_filter_high"] = data["Intensity"] > max_intensity
+     
+    clean_data = remove_all_errors(data)
+
+    # Calculate sum of errors and notify user
+    num_err_intensity_filter_low = data['err_intensity_filter_low'].sum()
+    num_err_intensity_filter_high = data['err_intensity_filter_high'].sum()
+
+    print(f"[INFO] Number of readings below the minimum intensity removed: {num_err_intensity_filter_low}")
+    print(f"[INFO] Number of readings above the maxmimum intensity removed: {num_err_intensity_filter_high}")
+
+def remove_all_errors(input_data):
+
+    # Make a copy so we are not editing original dataframe
+    data = input_data.copy()
+
+    # Find all columns that start with 'err_'
+    error_columns = data.columns[data.columns.str.startswith('err_')]
+    # print(error_columns)
+    # Check if any of the error columns have 'True' values
+    error_mask = data[error_columns].any(axis=1)
+    
+    return data[~error_mask]
 
 
-def find_center(data, pars=pars, **kwargs):
+def find_center(input_data, pars=pars, **kwargs):
     """Finds the center of the data using a specified centering strategy.
 
     Args:
@@ -108,10 +124,13 @@ def find_center(data, pars=pars, **kwargs):
 
     """
 
-    # Load kwargs
+    # Extract values from XML
     centering_strategy = kwargs.get('centering_strategy', pars.centering_strategy)
     pixel_size = kwargs.get('pixel_size',pars.pixel_size)
     
+    # Collected Cleaned Data (No errors)
+    data = remove_all_errors(input_data)
+
     # Extract x and y values
     x = data["X position"]
     y = data["Y position"]
@@ -119,7 +138,7 @@ def find_center(data, pars=pars, **kwargs):
     # Centering strategy: "center_hist_max"
     if centering_strategy == "center_hist_max":
 
-        # Load kwargs
+        # Extract values from XML
         bin_num = kwargs.get('bin_num', pars.center_hist_max_bins)
 
         # Calculate a low-resolution histogram and find the maximum value
@@ -175,7 +194,7 @@ def find_center(data, pars=pars, **kwargs):
     return center, radius_estimate
 
 
-def generate_centered_data(data, center):
+def generate_centered_data(input_data, center):
     """Generates centered data by subtracting the center coordinates.
 
     Args:
@@ -187,61 +206,93 @@ def generate_centered_data(data, center):
         tuple: The x and y displacement arrays after centering.
 
     """
+    # Collected Cleaned Data (No errors)
+    data = remove_all_errors(input_data)
 
     # Extract x and y values
+    
     x = data["X position"]
     y = data["Y position"]
 
     # Subtract center coordinates from each position column to find displacement and store in new columns
-    data["X displacement (pixel)"] = x - center[0]
-    data["Y displacement (pixel)"] = y - center[1]
-
-    return data
-
-
-def calculate_angle(data, pars=pars, **kwargs):
-    """Calculates the angle based on the given data.
-
-    Args:
-        data (pandas.DataFrame): The input DataFrame containing the data.
-        pars (object): Optional object containing default parameters (default: pars, as defined at the top of the script).
-        **kwargs: Additional keyword arguments.
-            - processing (str): The type of processing to apply (default: pars.processing).
-            - bin_size (int): The size of the bin for moving average or downsampling (default: pars.downsampling_bin_size).
-            - start_frame (int): The starting frame index for downsampling (default: pars.start_frame).
-            - end_frame (int): The ending frame index for downsampling (default: pars.end_frame).
-
-    Returns:
-        pandas.DataFrame: The DataFrame with calculated angle values.
-
-    """
-
-    # Recalculation of center using distance formula -- Jerry
-    data['Radius (pixel)'] = np.sqrt(data["X displacement (pixel)"]**2 + data["Y displacement (pixel)"]**2)
+    x_centered = x - center[0]
+    y_centered = y - center[1]
     
-    # Z score calculation
-    import scipy.stats as stats  # Importing scipy.stats for calculating z-score
-    data['z-score Rad'] = stats.zscore(data["Radius (pixel)"])
+    print(f"[INFO] Data has been centered around {center[0]}, {center[1]}")
+
+    return x_centered, y_centered 
+    
+
+def calculate_radius(data):
+    
+    # Calculate Radius
+    x = data["X displacement (pixel)"]
+    y = data["Y displacement (pixel)"]
+    rad = np.sqrt(x**2 + y**2)
+
+    return rad
 
 
-    # Angle Calculation
+def calculate_rad_zscore(data):
+
+    #calculate zscore 
+    zscore_rad = stats.zscore(data["Radius (pixel)"].dropna())
+
+    return zscore_rad
+
+
+def calculate_angle(input_data, pars=pars, **kwargs):
+
+    data = remove_all_errors(input_data)
+
+    # Extract values from XML
+    rad_filter_type_lower = kwargs.get('rad_filter_type_lower', pars.rad_filter_type_lower)
+    rad_filter_type_upper = kwargs.get('rad_filter_type_upper', pars.rad_filter_type_upper)
+    z_low = kwargs.get('z_low', pars.z_low)
+    z_high = kwargs.get('z_high', pars.z_high)
+    dist_low = kwargs.get('dist_low', pars.dist_low)
+    dist_high = kwargs.get('dist_high', pars.dist_high)
 
     # Radian to degree conversion factor
     r2d = 180 / np.pi
 
     # Calculate the angle using arctan2 function
-    data['Angle'] = -np.arctan2(data['Y displacement (pixel)'], data['X displacement (pixel)']) * r2d
+    angle = -np.arctan2(data['Y displacement (pixel)'], data['X displacement (pixel)']) * r2d
 
     # Make all negative Theta values positive equivalents
-    data.loc[data.Angle < 0, 'Angle'] += 360
+    angle[angle < 0] += 360
 
-    ##### Start to calculate angular continuous
+    # Marginal Angle calculation using the my_diff function
+    def calculate_delta_angle(vec):
 
-    #Calculate
-    data, data_filtered_pass, data_filtered_nopass, data_filtered_lower_bound_nopass, data_filtered_upper_bound_nopass = AngleCalc.conti_angle_calc(data)
-    print("[INFO] Updated angle calculations have been calculated")
+        vect = vec.diff()  # run a differential on all the angles
 
-    return data
+        vect[0] = 0  # set the first NaN to 0
+
+        # assuming all increments are less than 180,
+        # then make all changes bigger than 180, less than 180.
+
+        # greater than 180 --> negative equivalent
+        vect[vect >= (180)] -= 360
+
+        # less than -180 --> positive equivalent
+        vect[vect <= (-180)] += 360
+
+        return vect
+
+    #store Delta Angle
+    delta_angle = calculate_delta_angle(angle)
+
+    # CONTINUOUS ANGLE: continuous sumation of the differentials
+    # Run running summation fnction on differential angle
+    continuous_angle = delta_angle.cumsum()
+
+    # Calculate angle and handle jumps according to Angle Calc
+    print("[INFO] Angle calculations have been calculated")
+
+
+    return angle, delta_angle, continuous_angle
+
 
 
 def downsample(data, pars=pars, **kwargs):
@@ -261,7 +312,7 @@ def downsample(data, pars=pars, **kwargs):
 
     """
 
-    # Establish processing type from kwargs
+    # Extract parameters from XML
     processing = kwargs.get('processing', pars.processing)
 
     if processing == "none":
@@ -270,7 +321,9 @@ def downsample(data, pars=pars, **kwargs):
         return df
 
     if processing == "moving average":
-        bin_size = kwargs.get('bin_size', pars.downsampling_bin_size)
+
+         # Extract bin_size from XML 
+        bin_size = kwargs.get('pars.downsampling_bin_size', pars.downsampling_bin_size)
 
         # Simple Moving Average or "filter" dataframe:
         ma = pd.DataFrame(data.iloc[:, 0], columns=['index'])
@@ -292,14 +345,28 @@ def downsample(data, pars=pars, **kwargs):
         return ma
 
     if processing == "downsample":
+        
+        # Extract bin_size from XML 
+        bin_size = kwargs.get('pars.downsampling_bin_size', pars.downsampling_bin_size)
+        
         # Create a copy of the data dataframe
         da = data.copy()
 
-        # Define downsampling average function
         def average_column(df, col_num, n):
-            arr = df.iloc[:, col_num].values
-            end = n * int(len(arr) / n)
-            return np.mean(arr[:end].reshape(-1, n), 1)
+
+            # Extract the values from the specified column
+            column_values = df.iloc[:, col_num].values
+            
+            # Calculate the index at which downsampling should end
+            end_index = n * (len(column_values) // n)
+            
+            # Slice the array and reshape it into a 2D array with 'n' columns
+            sliced_array = column_values[:end_index].reshape(-1, n)
+            
+            # Calculate the mean along each row of the reshaped array
+            averaged_values = np.mean(sliced_array, axis=1)
+            
+            return averaged_values
 
         # Iterate over columns of da (except for the first index column)
         col_names = list(da.columns)
@@ -312,15 +379,9 @@ def downsample(data, pars=pars, **kwargs):
         dsa = pd.DataFrame(averaged_cols).T
         dsa.columns = da.columns
 
-        # Adjust start_frame and end_frame
-        start_frame = kwargs.get('start_frame', pars.start_frame)
-        end_frame = kwargs.get('end_frame', pars.end_frame)
-        start_frame = math.floor(start_frame / bin_size)
-        end_frame = math.floor(end_frame / bin_size)
+        print(f"[INFO] Data has been processed: {processing}")
 
-        print(f"Data has been processed: {processing}")
-
-        return dsa, start_frame, end_frame
+        return dsa
 
     
 def plot_2D_graph(df, fig=None, column_headers=None, pars=pars, **kwargs):
@@ -350,7 +411,7 @@ def plot_2D_graph(df, fig=None, column_headers=None, pars=pars, **kwargs):
 
     """
 
-    # Load kwargs
+    # Extract values from XML
     unit = kwargs.get('unit', pars.unit)
     cmap = kwargs.get('cmap', pars.cmap)
     marker_size = kwargs.get('marker_size', pars.marker_size)
@@ -379,6 +440,8 @@ def plot_2D_graph(df, fig=None, column_headers=None, pars=pars, **kwargs):
     if isinstance(df, np.ndarray):
         # Convert array into DataFrame with columns
         df = pd.DataFrame(df, columns=column_headers)
+
+    
 
     # Data assignment
     if unit == "pixel":
@@ -411,8 +474,6 @@ def plot_2D_graph(df, fig=None, column_headers=None, pars=pars, **kwargs):
     # Update the color bar with the new tick locations and labels
     cbar.update_ticks()
 
-    
-
 
     plt.axis('square')
     plt.xticks(rotation=45)
@@ -434,8 +495,8 @@ def plot_2D_graph(df, fig=None, column_headers=None, pars=pars, **kwargs):
         x_axis_label = "x (px)"
         y_axis_label = "y (px)"
     elif unit == "nm":
-        ax.set_xlim(nm_min, nm_max)
-        ax.set_ylim(nm_min, nm_max)
+        # ax.set_xlim(nm_min, nm_max)
+        # ax.set_ylim(nm_min, nm_max) [NOTE COMEBACK]
         ax.set_xticks(np.arange(nm_min, nm_max, axis_increment_nm))
         ax.set_yticks(np.arange(nm_min, nm_max, axis_increment_nm))
         x_axis_label = "x (nm)"
@@ -447,12 +508,11 @@ def plot_2D_graph(df, fig=None, column_headers=None, pars=pars, **kwargs):
     ax.set_ylabel(y_axis_label, fontweight='bold', fontsize=14)
     cbar.set_label(z_axis_label, fontweight='bold', fontsize=12)
 
-    # # Add hover cursor
-    # mplcursors.cursor(hover=True)
-    # mplcursors.cursor(highlight=True)
-def plot_angular_continuous(df, fig=None, pars=pars, **kwargs):
+
+
+def plot_angular_continuous(input_data, fig=None, pars=pars, **kwargs):
    
-    # Load kwargs
+    # Extract values from XML
     angle_vs_time_style = kwargs.get('angle_vs_time_style', pars.angle_vs_time_style)
     angle_vs_time_color = kwargs.get('angle_vs_time_color', pars.angle_vs_time_color)
     angle_vs_time_xlabel = kwargs.get('angle_vs_time_xlabel', pars.angle_vs_time_xlabel)
@@ -467,6 +527,9 @@ def plot_angular_continuous(df, fig=None, pars=pars, **kwargs):
         # fig.set_size_inches(5,5)
         fig.clf()
         ax = fig.add_subplot(111)
+
+    # Remove readings with erros
+    df = remove_all_errors(input_data)
 
     # define x axlis label
     if angle_vs_time_xlabel == "Frames":
@@ -502,8 +565,10 @@ def plot_angular_continuous(df, fig=None, pars=pars, **kwargs):
     
     # Graph the newly calcuated Angular Continuous data, now filtered for good points only
 
-def plot_intensity_time(df, fig=None, pars=pars, **kwargs):
 
+def plot_intensity_time(input_data, fig=None, pars=pars, **kwargs):
+
+    # Extract parameters from XML
     intensity_vs_time_style = kwargs.get('intensity_vs_time_style', pars.intensity_vs_time_style)
     intensity_vs_time_color = kwargs.get('intensity_vs_time_color', pars.intensity_vs_time_color)
     intensity_vs_time_xlabel = kwargs.get('intensity_vs_time_xlabel', pars.intensity_vs_time_xlabel)
@@ -516,6 +581,9 @@ def plot_intensity_time(df, fig=None, pars=pars, **kwargs):
         # fig.set_size_inches(5,5)
         fig.clf()
         ax = fig.add_subplot(111)
+
+    # Remove readings with erros
+    df = remove_all_errors(input_data)
 
     # define x axlis label
     if intensity_vs_time_xlabel == "Frames":
@@ -533,6 +601,9 @@ def plot_intensity_time(df, fig=None, pars=pars, **kwargs):
     elif intensity_vs_time_style == 'line':
         avt_graph = ax.plot(frames, df["Intensity"],  color=intensity_vs_time_color)
 
+    # Set the minimum y-value
+    # ax.set_ylim(bottom=0)
+
     # Set Title and y axis label
     title = "Intensity vs Frames"
     y_axis_label = 'Intensity (a.u.)'
@@ -541,3 +612,50 @@ def plot_intensity_time(df, fig=None, pars=pars, **kwargs):
     ax.set_title(title, fontweight='bold', fontsize=16)
     ax.set_xlabel(x_axis_label, fontweight='bold', fontsize=14)
     ax.set_ylabel(y_axis_label, fontweight='bold', fontsize=14)
+
+
+
+'''
+def remove_nopass_radius_filter(data,pars=pars,**kwargs):
+
+    # Extract values from XML
+    rad_filter_type_lower = kwargs.get('rad_filter_type_lower', pars.rad_filter_type_lower)
+    rad_filter_type_upper = kwargs.get('rad_filter_type_upper', pars.rad_filter_type_upper)
+    z_low = kwargs.get('z_low', pars.z_low)
+    z_high = kwargs.get('z_high', pars.z_high)
+    dist_low = kwargs.get('dist_low', pars.dist_low)
+    dist_high = kwargs.get('dist_high', pars.dist_high)
+
+    if rad_filter_type_lower == "zscore":
+        data["err_rad_filter_lower"] = data["zscore"]<z_low
+    elif rad_filter_type_lower == "nm":
+        data["err_rad_filter_lower"] = data["radius"]>dist_low
+    else:
+        ValueError("rad_filter_type_lower in the XML is not either zscore or nm")
+
+    if rad_filter_type_upper == "zscore":
+        data["err_rad_filter_upper"] = data["zscore"]<z_high
+    elif rad_filter_type_upper == "nm":
+        data["err_rad_filter_upper"] = data["radius"]>dist_high
+    else:
+        ValueError("rad_filter_type_upper in the XML is not either zscore or nm")
+
+
+   
+
+    # cleaned data to export
+    clean_data = remove_all_errors(data)
+
+    # erroneous data to export
+    err_radius_filter_low = data['err_rad_filter_lower']
+    err_radius_filter_high = data['err_rad_filter_upper']
+
+    # Calculate sum of errors and notify user
+    num_err_radius_filter_low = data['err_rad_filter_lower'].sum()
+    num_err_radius_filter_high = data['err_rad_filter_upper'].sum()
+
+    print(f"[INFO] Number of readings below the minimum radius filter ({rad_filter_type_lower}) removed: {num_err_intensity_filter_low}")
+    print(f"[INFO] Number of readings below the maxmimum radius filter ({rad_filter_type_upper}) removed: {num_err_intensity_filter_high}")
+    
+    return clean_data, err_radius_filter_low, err_radius_filter_high
+'''

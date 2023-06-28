@@ -17,7 +17,11 @@
   <time_step type="float">20</time_step> <!--miliseconds per frame in trajectory movie -->
   <start_frame type="int">0</start_frame>
   <end_frame type="int">-1</end_frame> <!-- -1 for end_frame= analyze to the end -->
-  <unit type='string'>nm</unit> <!-- Option 1) nm , Option 2) px-->
+  <unit type='string'>nm</unit> 
+  <!-- Options:
+      1) nm
+      2) px
+  -->
 
  
 <!--Centering Settings-->
@@ -35,17 +39,25 @@
       2) ma, moving average
       3) downsample, downsampling
   -->
-<downsampling_bin_size type="string">10</downsampling_bin_size>
+<downsampling_bin_size type="int">4</downsampling_bin_size>
 
 <!-- Angle Continuous Calculations-->
 
 <!-- <angle_calculations > -->
 <rad_filter_type_lower type='string'>nm</rad_filter_type_lower>  <!-- Set the lower radius filter type to 'nm' -->
+<!-- Options:
+      1) nm
+      2) zscore
+  -->
 <rad_filter_type_upper type='string'>zscore</rad_filter_type_upper>  <!-- Set the upper radius filter type to 'zscore' -->
-<z_up type='float'>3.0</z_up>  <!-- Set the upper bound for z score to 3 -->
-<z_down type='float'>-3.0</z_down>  <!-- Set the lower bound for z score to -3 -->
-<dist_low type='float'>30.0</dist_low>  <!-- Set the lower bound for absolute value of Radius filter to 30 -->
-<dist_high type='float'>70.0</dist_high>  <!-- Set the upper bound for absolute value of Radius filter to 70 -->
+<!-- Options:
+      1) nm
+      2) zscore
+  -->
+<z_low type='float'>-3.0</z_low>  <!-- Set the lower bound for z score-->
+<z_high type='float'>3.0</z_high>  <!-- Set the upper bound for z score -->
+<dist_low type='float'>30.0</dist_low>  <!-- Set the lower bound for absolute value of Radius filter-->
+<dist_high type='float'>70.0</dist_high>  <!-- Set the upper bound for absolute value of Radius filter-->
 <filter_nopass type='int'>0</filter_nopass>  <!-- Set the filter to not pass non-passing values -->
 <annotate_nopass type='int'>1</annotate_nopass>  <!-- Set the annotation to annotate times of non-passing values -->
 
@@ -53,7 +65,7 @@
 
 <!-- General Graph Settings-->
 <background_color type ="string">white</background_color>
-<default_secondary_graph type ="string">Continuous Angle vs Time</default_secondary_graph>
+<!-- <default_secondary_graph type ="string">Continuous Angle vs Time</default_secondary_graph> -->
 <!-- Options:
       1) Continuous Angle vs Time
       2) Intensity vs  Time
@@ -62,7 +74,7 @@
 <!-- 2D Graph Settings-->
 <cmap type="string">spring_r</cmap> <!--https://matplotlib.org/2.0.2/examples/color/colormaps_reference.html-->
 <marker_size type="int">15</marker_size>
-<display_center type='int'>0</display_center>
+<display_center type='int'>1</display_center>
 <expected_radius type='float'>0</expected_radius>
 <pixel_min type = 'float'>-0.75</pixel_min>
 <pixel_max type = 'float'>0.75</pixel_max>

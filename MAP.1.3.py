@@ -102,25 +102,31 @@ class MyGUI(QMainWindow):
         self.selected_csv = selected_csv
         dir_path = self.dir_path
 
-        # Load the csv into a data frame
+        # Run DORA pipeline
         self.raw_data = DORA.load_csv(selected_csv,dir_path)
+        self.data = self.raw_data.copy() # Copy data so raw data remains intact
+        DORA.remove_invalid_readings(self.data)
+        DORA.remove_nopass_intensity_filter(self.data)
+        self.center, __ = DORA.find_center(self.data)
+        self.data["X displacement (pixel)"], self.data["Y displacement (pixel)"] = DORA.generate_centered_data(self.data, self.center)
+        self.data['Radius (pixel)'] = DORA.calculate_radius(self.data)
+        self.data['z-score Rad'] = DORA.calculate_rad_zscore(self.data)
+        self.data["Angle"], self.data["Delta Angle"], self.data["Continuous Angle"] = DORA.calculate_angle(self.data)
+        down_sampled_df = DORA.downsample(self.data.dropna())
 
-        # Intialize bounds 
+        
+        # Intialize frame and intensity bounds
         self.start_frame = self.raw_data["index"].min()
         self.end_frame = self.raw_data["index"].max()
         self.min_intensity = self.raw_data["Intensity"].min()
         self.max_intensity = self.raw_data["Intensity"].max()
 
-        # Update the GUI to reflect it 
+        # Update the GUI to reflect new frame and itensity bounds
         self.frame_start_LineEdit.setText(str(self.start_frame))
         self.frame_end_LineEdit.setText(str(self.end_frame))
         self.intensity_min_LineEdit.setText(str(self.min_intensity))
         self.intensity_max_LineEdit.setText(str(self.max_intensity))
 
-        # Continue DORA processing
-        self.raw_data, __, __ = DORA.remove_invalid_readings(self.raw_data)
-        self.center, __ = DORA.find_center(self.raw_data)
-        
         #Add first found center into center_list 
         self.center_list = np.array(self.center)
         print(f"my starting center is {self.center_list}")
@@ -129,16 +135,6 @@ class MyGUI(QMainWindow):
         self.center_x_LineEdit.setText(str(0)) 
         self.center_y_LineEdit.setText(str(0)) 
         
-        # Continue DORA
-        self.centered_data = DORA.generate_centered_data(self.raw_data, self.center)
-        self.centered_data = DORA.calculate_angle(self.centered_data)
-        if pars.processing == "downsample":
-            down_sampled_df,frame_start,frame_end = DORA.downsample(self.centered_data)
-            # self.frame_start = frame_start
-            # self.frame_end = frame_end
-        else:
-            down_sampled_df = DORA.downsample(self.centered_data)
-
         # Store the data
         self.data = down_sampled_df
 
@@ -167,7 +163,7 @@ class MyGUI(QMainWindow):
 
     def update_input_values(self):
         
-        # Check if inputs are numeric
+        # Create a list of all line edits
         lineEdits = [ 
             self.frame_increment_LineEdit, 
             self.center_x_LineEdit, 
@@ -177,7 +173,8 @@ class MyGUI(QMainWindow):
             self.intensity_min_LineEdit, 
             self.intensity_max_LineEdit
         ]
-
+        
+        # Check if inputs are numeric
         for lineEdit in lineEdits:
             value = lineEdit.text()
             try:
@@ -209,6 +206,7 @@ class MyGUI(QMainWindow):
                 # add center if it is new
                 self.center_list = np.vstack((self.center_list, self.added_center)) # adds a running list of center manipulations so that all centering opperations are relative to the original data
             self.center = np.sum(self.center_list, axis=0)
+            
             print(f"[INFO] Adjusted Center in pixel space is {self.center}")
             update_value(self, self.frame_start_LineEdit, "start_frame")
             update_value(self, self.frame_end_LineEdit, "end_frame")
@@ -222,15 +220,15 @@ class MyGUI(QMainWindow):
 
             # Load the csv into a data frame and remove NaN's
             self.raw_data = DORA.load_csv(selected_csv, dir_path, start_frame = self.start_frame, end_frame = self.end_frame)
-            self.raw_data, __, __ = DORA.remove_invalid_readings(self.raw_data)
-            # self.center, __ = DORA.find_center(self.raw_data)
-            self.centered_data = DORA.generate_centered_data(self.raw_data, self.center)
-            self.centered_data = DORA.calculate_angle(self.centered_data)
-            if pars.processing == "downsample":
-                self.data ,frame_start,frame_end = DORA.downsample(self.centered_data)
-            else:
-                self.data = DORA.downsample(self.centered_data)
-
+            self.data = self.raw_data.copy() # Copy data so raw data remains intact
+            DORA.remove_invalid_readings(self.data)
+            DORA.remove_nopass_intensity_filter(self.data, min_intensity= self.min_intensity, max_intensity=self.max_intensity) #!! Change
+            self.data["X displacement (pixel)"], self.data["Y displacement (pixel)"] = DORA.generate_centered_data(self.data, self.center)
+            self.data['Radius (pixel)'] = DORA.calculate_radius(self.data)
+            self.data['z-score Rad'] = DORA.calculate_rad_zscore(self.data)
+            self.data["Angle"], self.data["Delta Angle"], self.data["Continuous Angle"] = DORA.calculate_angle(self.data)
+            down_sampled_df = DORA.downsample(self.data.dropna())
+        
             # change to np format
             self.data_array = self.data.to_numpy()
 
@@ -267,6 +265,8 @@ class MyGUI(QMainWindow):
 
     def update_secondary_graph(self):
 
+        print("update sec graph ran")
+
         # Reset Graph Canvas
         self.fig_2.clf()
 
@@ -280,6 +280,7 @@ class MyGUI(QMainWindow):
 
         elif self.choosen_secondary_graph == "Intensity vs Time":
             DORA.plot_intensity_time(self.data, title = self.selected_csv, fig = self.fig_2) 
+            print("Ivt is being updated")
         else:
             ValueError("[ERROR] The choosen secondary graph combo box selection is NOT part of the approved list")
 
