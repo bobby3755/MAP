@@ -1,4 +1,6 @@
-# MAP
+# MAP (Multi Analysis Pipeline)
+
+Graphical user interface that runs the DNA Origami Rotor Analyization Pipeline. 
 
 Author: Jerry Wu
 Last Modified: 5/15/2023
@@ -8,4 +10,6 @@ Last Modified: 5/15/2023
 - [more to come]
 
 # Latest Update:
-- Minimal DORA now has all features from opening csv --> 2D graph rendering
+- Docs has been added for sphinx doc generation -- not complete
+- UI has been updated viusally to have a purple theme, complemented by a purple plasma theme
+- 
