@@ -111,6 +111,18 @@
       1) Frames
       2) Time (ms)
   -->
+<!-- snr vs Time Graph Settings-->
+<snr_vs_time_style type='string'>line</snr_vs_time_style>
+  <!-- Options:
+      1) scatter
+      2) line
+  -->
+<snr_vs_time_color type='string'>#1644B4</snr_vs_time_color>
+<snr_vs_time_xlabel type = 'string'>Frames</snr_vs_time_xlabel>
+  <!-- Options:
+      1) Frames
+      2) Time (ms)
+  -->
 
 
 

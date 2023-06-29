@@ -53,7 +53,7 @@ def load_csv(selected_csv, dir_path, pars=pars, **kwargs):
     pre_data.insert(0, 'index', range(len(pre_data)))
 
     # Rename the first four columns as 'index', 'X position', 'Y position', and 'Intensity'
-    pre_data.columns.values[:4] = ['index', 'X position', 'Y position', 'Intensity']
+    pre_data.columns.values[:7] = ['index', 'X position', 'Y position', 'Intensity','Signal','Noise','SNR']
 
     # Create a 'Time (ms)' column based on the index and time_step
     pre_data.insert(1, 'Time (ms)', pre_data['index'] * time_step)
@@ -717,4 +717,67 @@ def plot_intensity_time(input_data, fig=None, pars=pars, **kwargs):
     ax.set_xlabel(x_axis_label, fontweight='bold', fontsize=14)
     ax.set_ylabel(y_axis_label, fontweight='bold', fontsize=14)
 
+
+
+def plot_snr_time(input_data, fig=None, pars=pars, **kwargs):
+    """
+    Plots the intensity vs. time based on the provided input data.
+
+    Args:
+        input_data (pandas.DataFrame): The input DataFrame containing the data.
+        fig (matplotlib.figure.Figure): Optional predefined figure (default: None).
+        pars (object): Optional object containing default parameters (default: pars, as defined at the top of the script).
+        **kwargs: Additional keyword arguments.
+            - intensity_vs_time_style (str): The style of the plot ('scatter' or 'line') (default: pars.intensity_vs_time_style).
+            - intensity_vs_time_color (str): The color of the plot (default: pars.intensity_vs_time_color).
+            - intensity_vs_time_xlabel (str): The x-axis label ('Frames' or 'Time (ms)') (default: pars.intensity_vs_time_xlabel).
+
+    Returns:
+        matplotlib.figure.Figure: The generated figure.
+    """
+    
+    # Extract parameters from XML
+    snr_vs_time_style = kwargs.get('snr_vs_time_style', pars.snr_vs_time_style)
+    snr_vs_time_color = kwargs.get('snr_vs_time_color', pars.snr_vs_time_color)
+    snr_vs_time_xlabel = kwargs.get('snr_vs_time_xlabel', pars.snr_vs_time_xlabel)
+
+     # If figure is not predefined, create a new figure
+    if fig is None:
+        fig, ax = plt.subplots(1, 1)
+        # fig.set_size_inches(5.5,5)s
+    else:
+        # fig.set_size_inches(5,5)
+        fig.clf()
+        ax = fig.add_subplot(111)
+
+    # Remove readings with erros
+    df = remove_all_errors(input_data)
+
+    # define x axlis label
+    if snr_vs_time_xlabel == "Frames":
+        frames = df["index"]
+        x_axis_label = "Frames"
+    elif snr_vs_time_xlabel == "Time (ms)":
+        frames = df["Times (ms)"]
+        x_axis_label = "Time (ms)"
+    else:
+        ValueError("[ERROR] entered snr_vs_time_xlabel is one of the executable options.")
+
+    # choose scatter plot or line plot
+    if snr_vs_time_style == 'scatter':
+        snr_graph = ax.scatter(frames, df["SNR"], color=snr_vs_time_color, s=5)
+    elif snr_vs_time_style == 'line':
+        snr_graph = ax.plot(frames, df["SNR"],  color=snr_vs_time_color)
+
+    # Set the minimum y-value
+    # ax.set_ylim(bottom=0)
+
+    # Set Title and y axis label
+    title = "snr vs Frames"
+    y_axis_label = 'snr (a.u.)'
+
+    # Set title, axis labels, and font configurations
+    ax.set_title(title, fontweight='bold', fontsize=16)
+    ax.set_xlabel(x_axis_label, fontweight='bold', fontsize=14)
+    ax.set_ylabel(y_axis_label, fontweight='bold', fontsize=14)
 

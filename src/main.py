@@ -82,6 +82,8 @@ class MyGUI(QMainWindow):
         Returns:
             None
         """
+
+        #pull in user data
         super(MyGUI,self).__init__()
         uic.loadUi("MAP.1.3.color.ui",self)
         self.show()
@@ -100,7 +102,7 @@ class MyGUI(QMainWindow):
         # Connect the clear selection button with clear csv function
         self.clear_csvs_btn.clicked.connect(self.clear_csv_list)
 
-        # set up figure and canvas for Intensity graph
+        # set up figure and canvas for secondary graph
         self.fig_2 = plt.figure()
         self.canvas_2 = FigureCanvas(self.fig_2)
         self.toolbar_2 = NavigationToolbar(self.canvas_2,self.centralwidget)
@@ -130,7 +132,7 @@ class MyGUI(QMainWindow):
 
         #set default function values
         self.frame_increment = pars.frame_increment
-        secondary_graph_options = ["Continuous Angle vs Time", "Intensity vs Time"]
+        secondary_graph_options = ["Continuous Angle vs Time", "Intensity vs Time","SNR vs Time"]
         for option in secondary_graph_options:
             self.secondary_graph_comboBox.addItem(option)
         self.choosen_secondary_graph = self.secondary_graph_comboBox.currentText()
@@ -189,7 +191,7 @@ class MyGUI(QMainWindow):
         # Run DORA pipeline
         self.raw_data = DORA.load_csv(selected_csv, dir_path)
         self.data = self.raw_data.copy()  # Copy data so raw data remains intact
-        DORA.remove_invalid_readings(self.data)
+        DORA.remove_invalid_readings(self.data) # NOTE: change name to mask
         DORA.remove_nopass_intensity_filter(self.data)
         self.center, __ = DORA.find_center(self.data)
         self.data["X displacement (pixel)"], self.data["Y displacement (pixel)"] = DORA.generate_centered_data(self.data, self.center)
@@ -420,12 +422,15 @@ class MyGUI(QMainWindow):
         self.choosen_secondary_graph = self.secondary_graph_comboBox.currentText()
         self.label_2.setText(self.choosen_secondary_graph)
 
-        # If specific graph is choose, plot that graph
+        # If specific graph is choosen, plot that graph
         if self.choosen_secondary_graph == "Continuous Angle vs Time":
             DORA.plot_angular_continuous(self.data, title = self.selected_csv, fig = self.fig_2)
 
         elif self.choosen_secondary_graph == "Intensity vs Time":
             DORA.plot_intensity_time(self.data, title = self.selected_csv, fig = self.fig_2) 
+
+        elif self.choosen_secondary_graph == "SNR vs Time":
+            DORA.plot_snr_time(self.data, title = self.selected_csv, fig = self.fig_2)
     
         else:
             ValueError("[ERROR] The choosen secondary graph combo box selection is NOT part of the approved list")
