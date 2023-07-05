@@ -22,7 +22,7 @@ To install MAP, please follow these steps:
    python main.py
 ```
 
-Please note that MAP requires the "origami" environment to be activated in order to run successfully. Ensure that you have all the necessary dependencies installed before running the application.
+Please note that MAP requires the "origami" environment to be activated in order to run successfully.
 
 ## Tutorials
 
