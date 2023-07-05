@@ -6,9 +6,10 @@ MAP (Multi Analysis Pipeline) is a powerful graphical user interface designed fo
 
 To install MAP, please follow these steps:
 
-1. Download the source code folder from the GitHub repository [link here].
-2. Open Anaconda Command Prompt as an administrator.
-3. Activate the "origami" environment by executing the following command:
+1. Download the source code folder from this GitHub repository.
+2. Put the file in any directory on the /D: drive. It does not need to be in the same folder as any data because the GUI can navigate to it. 
+3. Open Anaconda Command Prompt as an administrator.
+4. Activate the "origami" environment by executing the following command:
 
 ```shell
    conda activate origami
