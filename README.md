@@ -15,7 +15,7 @@ To install MAP, please follow these steps:
    conda activate origami
 ```
 
-4. Navigate to the directory where you have stored the downloaded the "src" folder, and navigate into that folder. Note: you should see main.py
+4. Navigate to the directory where you have stored the downloaded the "src" folder, and navigate into that folder. Note: you should see main.py by running "ls" in the terminal to list all files.
 6. Run the following command to start the application:
 
 ```shell
