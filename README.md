@@ -27,7 +27,7 @@ Please note that MAP requires the "origami" environment to be activated in order
 
 ## Tutorials
 
-For detailed instructions on how to use MAP, refer to the following tutorial:
+For detailed instructions on how to use MAP, refer to the following series tutorial: [To be Updated]
 
 - [How to add a graph](https://docs.google.com/document/d/1-iP3nXfDRMby8nnmY4JYUhW9uiQGKKAjAcLwx2RPnnk/edit?usp=sharing)
 
