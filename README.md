@@ -2,7 +2,7 @@
 
 MAP (Multi Analysis Pipeline) is a powerful graphical user interface designed for DORA (DNA Origami Rotor Analysis), specifically developed for use by the Pallav Kosuri Lab. This tool facilitates fast data parsing of single molecule fluorescence times series data, enabling efficient analysis and visualization.
 
-## Installation
+## Installation for users internal to Kosuri Lab
 
 To install MAP, please follow these steps:
 
