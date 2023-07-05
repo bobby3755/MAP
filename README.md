@@ -18,7 +18,9 @@ To install MAP, please follow these steps:
 5. Change your current directory to the "src" folder within the downloaded source code folder.
 6. Run the following command to start the application:
 
-
+```shell
+   python main.py
+```
 
 Please note that MAP requires the "origami" environment to be activated in order to run successfully. Ensure that you have all the necessary dependencies installed before running the application.
 
