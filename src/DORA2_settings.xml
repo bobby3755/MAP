@@ -63,13 +63,9 @@
 
 
 
-<!-- General Graph Settings-->
-<background_color type ="string">white</background_color>
-<!-- <default_secondary_graph type ="string">Continuous Angle vs Time</default_secondary_graph> -->
-<!-- Options:
-      1) Continuous Angle vs Time
-      2) Intensity vs  Time
-  -->
+<!-- General Graph Settings: Currently None-->
+
+
 
 <!-- 2D Graph Settings-->
 <cmap type="string">plasma_r</cmap> <!--https://matplotlib.org/2.0.2/examples/color/colormaps_reference.html-->
@@ -111,6 +107,7 @@
       1) Frames
       2) Time (ms)
   -->
+
 <!-- snr vs Time Graph Settings-->
 <snr_vs_time_style type='string'>line</snr_vs_time_style>
   <!-- Options:
@@ -124,6 +121,18 @@
       2) Time (ms)
   -->
 
+<!-- SNR2 vs Time Graph Settings-->
+<snr2_vs_time_style type='string'>line</snr2_vs_time_style>
+  <!-- Options:
+      1) scatter
+      2) line
+  -->
+<snr2_vs_time_color type='string'>#1644B4</snr2_vs_time_color>
+<snr2_vs_time_xlabel type = 'string'>Frames</snr2_vs_time_xlabel>
+  <!-- Options:
+      1) Frames
+      2) Time (ms)
+  -->
 
 
 </settings>

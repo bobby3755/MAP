@@ -132,7 +132,7 @@ class MyGUI(QMainWindow):
 
         #set default function values
         self.frame_increment = pars.frame_increment
-        secondary_graph_options = ["Continuous Angle vs Time", "Intensity vs Time","SNR vs Time"]
+        secondary_graph_options = ["Continuous Angle vs Time", "Intensity vs Time","SNR vs Time", "SNR2 vs Time"]
         for option in secondary_graph_options:
             self.secondary_graph_comboBox.addItem(option)
         self.choosen_secondary_graph = self.secondary_graph_comboBox.currentText()
@@ -431,6 +431,9 @@ class MyGUI(QMainWindow):
 
         elif self.choosen_secondary_graph == "SNR vs Time":
             DORA.plot_snr_time(self.data, title = self.selected_csv, fig = self.fig_2)
+
+        elif self.choosen_secondary_graph == "SNR2 vs Time":
+            DORA.plot_intensity_time(self.data, title = self.selected_csv, fig = self.fig_2) 
     
         else:
             ValueError("[ERROR] The choosen secondary graph combo box selection is NOT part of the approved list")
